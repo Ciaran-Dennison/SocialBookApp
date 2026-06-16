@@ -7,4 +7,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SocialBookAppApplication\SocialBookAppApplication.csproj" />
+    <ProjectReference Include="..\SocialBookAppDomain\SocialBookAppDomain.csproj" />
+    <ProjectReference Include="..\SocialBookAppInfrastructure\SocialBookAppInfrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

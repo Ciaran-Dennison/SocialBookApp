@@ -4,8 +4,5 @@ namespace SocialBookAppApplication;
 
 public interface IBookService : IRatingService
 {
-    public Book GetBookById(int id)
-    {
-
-    }
+    public Book GetBookById(int id);
 }
