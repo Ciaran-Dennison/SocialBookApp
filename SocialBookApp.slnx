@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SocialBookAppAPI/SocialBookAppAPI.csproj" />
+  <Project Path="SocialBookAppDomain/SocialBookAppDomain.csproj" />
+</Solution>
