@@ -1,8 +1,10 @@
 ﻿
 
+using SocialBookAppDomain;
+
 namespace SocialBookAppApplication;
 
 public interface IRatingService
 {
-    public double GetRatingPercentage(int id);
+    public double GetRatingPercentage(List<Review> reviews);
 }

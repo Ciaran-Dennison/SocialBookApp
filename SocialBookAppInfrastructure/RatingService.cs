@@ -5,8 +5,12 @@ namespace SocialBookAppInfrastructure;
 
 public class RatingService : IRatingService
 {
-    public double GetRatingPercentage(int id)
+    public double GetRatingPercentage(List<Review> reviews)
     {
-        throw new NotImplementedException();
+        if (reviews == null || reviews.Count == 0)
+        {
+            return 0;
+        }
+        return reviews.Average(r => r.Rating);
     }
 }
