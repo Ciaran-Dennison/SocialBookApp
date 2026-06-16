@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="SocialBookAppAPI/SocialBookAppAPI.csproj" />
+  <Project Path="SocialBookAppApplication/SocialBookAppApplication.csproj" />
+  <Project Path="SocialBookAppCLI/SocialBookAppCLI.csproj" Id="ddc0c070-ea0f-4b1f-bcc1-dcbde37b9427" />
   <Project Path="SocialBookAppDomain/SocialBookAppDomain.csproj" />
+  <Project Path="SocialBookAppInfrastructure/SocialBookAppInfrastructure.csproj" Id="b918c4df-31a8-4250-bcdf-23570ecdc16b" />
 </Solution>
