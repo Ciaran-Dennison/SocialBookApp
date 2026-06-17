@@ -4,7 +4,7 @@ namespace SocialBookAppApplication;
 
 public interface IUserService
 {
-    public User GetUserById(int id);
+    public User? GetUserById(int id);
 
     public void UpdateFavouriteGenre(List<Genre> genres, int id);
 

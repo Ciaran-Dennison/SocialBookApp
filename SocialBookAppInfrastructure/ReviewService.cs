@@ -14,6 +14,14 @@ public class ReviewService : IReviewService
 
     public void EditReview(Review review, int id)
     {
-        throw new NotImplementedException();
+        var existingReview = _context.Reviews.FirstOrDefault(r => r.Id == id);
+        if (existingReview == null)
+        {
+            throw new ArgumentException("Review not found.");
+        }
+        existingReview.Book = review.Book;
+        existingReview.Rating = review.Rating;
+        existingReview.Comment = review.Comment;
+        _context.SaveChanges();
     }
 }

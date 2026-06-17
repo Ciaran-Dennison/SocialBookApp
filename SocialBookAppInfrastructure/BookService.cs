@@ -19,8 +19,8 @@ public class BookService : IBookService
         return _ratingService.GetRatingPercentage(reviews);
     }
 
-    public Book GetBookById(int id)
+    public Book? GetBookById(int id)
     {
-        throw new NotImplementedException();
+        return _context.Books.FirstOrDefault(b => b.Id == id);
     }
 }
