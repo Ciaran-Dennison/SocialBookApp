@@ -1,4 +1,6 @@
 ﻿
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SocialBookAppDomain;
 
 public class User
@@ -12,6 +14,8 @@ public class User
     public string Email { get; set; }
     public string Password { get; set; }
     public List<string> Languages { get; set; }
+
+    [NotMapped]
     public List<Genre> FavouriteGenres { get; set; }
     public PrivacyLevel PrivacyLevel { get; set; }
 }

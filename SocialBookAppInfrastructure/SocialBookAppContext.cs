@@ -16,4 +16,19 @@ public class SocialBookAppContext : DbContext
     {
 
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Book>()
+            .HasMany(b => b.Publishers)
+            .WithMany(p => p.Books);
+
+        modelBuilder.Entity<Publisher>()
+            .HasMany(p => p.BestSellers)
+            .WithMany();
+
+        modelBuilder.Entity<Book>()
+            .HasMany(b => b.Authors)
+            .WithMany(a => a.Books);
+    }
 }
