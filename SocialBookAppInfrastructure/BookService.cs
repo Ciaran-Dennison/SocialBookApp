@@ -5,10 +5,12 @@ namespace SocialBookAppInfrastructure;
 
 public class BookService : IBookService
 {
+    private readonly SocialBookAppContext _context;
     private readonly IRatingService _ratingService;
 
-    public BookService(IRatingService ratingService)
+    public BookService(SocialBookAppContext context, IRatingService ratingService)
     {
+        _context = context;
         _ratingService = ratingService;
     }
 

@@ -5,10 +5,12 @@ namespace SocialBookAppInfrastructure;
 
 public class AuthorService : IAuthorService
 {
+    private readonly SocialBookAppContext _context;
     private readonly IRatingService _ratingService;
 
-    public AuthorService(IRatingService ratingService)
+    public AuthorService(SocialBookAppContext context, IRatingService ratingService)
     {
+        _context = context;
         _ratingService = ratingService;
     }
 

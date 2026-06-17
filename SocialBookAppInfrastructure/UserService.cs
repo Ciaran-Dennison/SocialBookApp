@@ -5,6 +5,13 @@ namespace SocialBookAppInfrastructure;
 
 public class UserService : IUserService
 {
+    private readonly SocialBookAppContext _context;
+
+    public UserService(SocialBookAppContext context)
+    {
+        _context = context;
+    }
+
     public User GetUserById(int id)
     {
         throw new NotImplementedException();

@@ -5,6 +5,13 @@ namespace SocialBookAppInfrastructure;
 
 public class RatingService : IRatingService
 {
+    private readonly SocialBookAppContext _context;
+
+    public RatingService(SocialBookAppContext context)
+    {
+        _context = context;
+    }
+
     public double GetRatingPercentage(List<Review> reviews)
     {
         if (reviews == null || reviews.Count == 0)
