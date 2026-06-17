@@ -15,7 +15,16 @@ public class User
     public string Password { get; set; }
     public List<string> Languages { get; set; } = new List<string>();
 
+    public string FavouriteGenresString { get; set; } = string.Empty;
+
     [NotMapped]
-    public List<Genre> FavouriteGenres { get; set; } = new List<Genre>();
+    public List<Genre> FavouriteGenres
+    {
+        get => FavouriteGenresString
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(g => Enum.Parse<Genre>(g))
+            .ToList();
+        set => FavouriteGenresString = string.Join(",", value);
+    }
     public PrivacyLevel PrivacyLevel { get; set; }
 }

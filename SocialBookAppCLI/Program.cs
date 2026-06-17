@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SocialBookAppApplication;
+using SocialBookAppCLI.Menus;
 using SocialBookAppInfrastructure;
 
 var configuration = new ConfigurationBuilder()
@@ -29,25 +30,30 @@ var reviewService = serviceProvider.GetRequiredService<IReviewService>();
 
 
 
-var options = new string[] { "Manage Users", "Manage Books", "View Authors", "View Publishers", "Exit" };
-var mainMenu = new ListInput("menu", "What would you like to do?", options);
+bool running = true;
 
-var inquirer = new Inquirer(mainMenu);
-inquirer.Ask();
-
-switch (mainMenu.Answer())
+while (running)
 {
-    case "1":
-        break;
-    case "2":
-        break;
-    case "3":
-        break;
-    case "4":
-        break;
-    case "5":
-        Console.WriteLine("Exiting the application...");
-        Thread.Sleep(500); // Wait for 5 seconds before exiting
-        Environment.Exit(0);
-        break;
+    Console.Clear();
+    var options = new string[] { "Manage Users", "Manage Books", "View Authors", "View Publishers", "Exit" };
+    var mainMenu = new ListInput("menu", "What would you like to do?", options);
+    new Inquirer(mainMenu).Ask();
+
+    switch (mainMenu.Answer())
+    {
+        case "1":
+            new UserMenu(userService).Show();
+            break;
+        case "2":
+            break;
+        case "3":
+            break;
+        case "4":
+            break;
+        case "5":
+            Console.WriteLine("Exiting the application...");
+            Thread.Sleep(500); // Wait for 5 seconds before exiting
+            running = false;
+            break;
+    }
 }

@@ -17,7 +17,7 @@ public class UserService : IUserService
         return _context.Users.FirstOrDefault(u => u.Id == id);
     }
 
-    public void UpdateFavouriteGenre(List<Genre> genres, int id)
+    public void UpdateFavouriteGenres(List<Genre> genres, int id)
     {
         var user = GetUserById(id);
         if (user == null)
@@ -40,6 +40,7 @@ public class UserService : IUserService
         existingUser.FirstName = user.FirstName;
         existingUser.LastName = user.LastName;
         existingUser.Email = user.Email;
+        existingUser.PrivacyLevel = user.PrivacyLevel;
         _context.SaveChanges();
     }
 
