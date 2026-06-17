@@ -13,9 +13,9 @@ public class User
     public DateTime CreatedDate { get; set; }
     public string Email { get; set; }
     public string Password { get; set; }
-    public List<string> Languages { get; set; }
+    public List<string> Languages { get; set; } = new List<string>();
 
     [NotMapped]
-    public List<Genre> FavouriteGenres { get; set; }
+    public List<Genre> FavouriteGenres { get; set; } = new List<Genre>();
     public PrivacyLevel PrivacyLevel { get; set; }
 }
