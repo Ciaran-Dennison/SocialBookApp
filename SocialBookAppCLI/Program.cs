@@ -20,3 +20,7 @@ services.AddScoped<IAuthorService, AuthorService>();
 services.AddScoped<IReviewService, ReviewService>();
 
 var serviceProvider = services.BuildServiceProvider();
+var userService = serviceProvider.GetRequiredService<IUserService>();
+var bookService = serviceProvider.GetRequiredService<IBookService>();
+var authorService = serviceProvider.GetRequiredService<IAuthorService>();
+var reviewService = serviceProvider.GetRequiredService<IReviewService>();
