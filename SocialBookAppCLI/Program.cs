@@ -35,7 +35,7 @@ bool running = true;
 while (running)
 {
     Console.Clear();
-    var options = new string[] { "Manage Users", "Manage Books", "Manage Authors", "Manage Publishers", "Exit" };
+    var options = new string[] { "Manage Users", "Manage Books", "Manage Authors", "Exit" };
     var mainMenu = new ListInput("menu", "What would you like to do?", options);
     new Inquirer(mainMenu).Ask();
 
@@ -51,8 +51,6 @@ while (running)
             new AuthorMenu(authorService).Show();
             break;
         case "4":
-            break;
-        case "5":
             Console.WriteLine("Exiting the application...");
             Thread.Sleep(500); // Wait for 5 seconds before exiting
             running = false;

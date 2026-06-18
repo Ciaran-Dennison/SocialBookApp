@@ -9,7 +9,6 @@ public class SocialBookAppContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Book> Books { get; set; }
     public DbSet<Review> Reviews { get; set; }
-    public DbSet<Publisher> Publishers { get; set; }
     public DbSet<Author> Authors { get; set; }
 
     public SocialBookAppContext(DbContextOptions<SocialBookAppContext> options) : base(options)
@@ -19,16 +18,10 @@ public class SocialBookAppContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Book>()
-            .HasMany(b => b.Publishers)
-            .WithMany(p => p.Books);
-
-        modelBuilder.Entity<Publisher>()
-            .HasMany(p => p.BestSellers)
-            .WithMany();
 
         modelBuilder.Entity<Book>()
-            .HasMany(b => b.Authors)
-            .WithMany(a => a.Books);
+        .HasMany(b => b.Authors)
+        .WithMany(a => a.Books);
+
     }
 }
