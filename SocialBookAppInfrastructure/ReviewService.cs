@@ -12,6 +12,11 @@ public class ReviewService : IReviewService
         _context = context;
     }
 
+    public List<Review> GetAllReviews()
+    {
+        return _context.Reviews.ToList();
+    }
+
     public void EditReview(Review review, int id)
     {
         var existingReview = _context.Reviews.FirstOrDefault(r => r.Id == id);

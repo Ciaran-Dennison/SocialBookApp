@@ -45,6 +45,7 @@ while (running)
             new UserMenu(userService).Show();
             break;
         case "2":
+            new BookMenu(bookService).Show();
             break;
         case "3":
             break;

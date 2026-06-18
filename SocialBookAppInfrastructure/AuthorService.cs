@@ -14,7 +14,10 @@ public class AuthorService : IAuthorService
         _ratingService = ratingService;
     }
 
-
+    public List<Author> GetAllAuthors()
+    {
+        return _context.Authors.ToList();
+    }
 
     public double GetRatingPercentage(List<Review> reviews)
     {

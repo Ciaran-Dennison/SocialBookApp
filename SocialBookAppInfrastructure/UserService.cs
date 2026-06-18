@@ -12,6 +12,11 @@ public class UserService : IUserService
         _context = context;
     }
 
+    public List<User> GetAllUsers()
+    {
+        return _context.Users.ToList();
+    }
+
     public User? GetUserById(int id)
     {
         return _context.Users.FirstOrDefault(u => u.Id == id);
