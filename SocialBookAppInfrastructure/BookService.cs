@@ -1,4 +1,5 @@
-﻿using SocialBookAppApplication;
+﻿using Microsoft.EntityFrameworkCore;
+using SocialBookAppApplication;
 using SocialBookAppDomain;
 
 namespace SocialBookAppInfrastructure;
@@ -24,9 +25,13 @@ public class BookService : IBookService
         return _context.Books.ToList();
     }
 
-    public Book? GetBookById(int id)
+    public Book GetBookById(int id)
     {
-        return _context.Books.FirstOrDefault(b => b.Id == id);
+        var book = _context.Books
+            .Include(b => b.Reviews)
+            .FirstOrDefault(b => b.Id == id);
+        if (book == null) throw new ArgumentException("Book not found.");
+        return book;
     }
 
     public void AddBook(Book book)

@@ -35,7 +35,7 @@ bool running = true;
 while (running)
 {
     Console.Clear();
-    var options = new string[] { "Manage Users", "Manage Books", "View Authors", "View Publishers", "Exit" };
+    var options = new string[] { "Manage Users", "Manage Books", "Manage Authors", "Manage Publishers", "Exit" };
     var mainMenu = new ListInput("menu", "What would you like to do?", options);
     new Inquirer(mainMenu).Ask();
 
@@ -48,6 +48,7 @@ while (running)
             new BookMenu(bookService).Show();
             break;
         case "3":
+            new AuthorMenu(authorService).Show();
             break;
         case "4":
             break;

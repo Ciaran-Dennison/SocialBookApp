@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SocialBookAppInfrastructure;
 
@@ -11,9 +12,11 @@ using SocialBookAppInfrastructure;
 namespace SocialBookAppInfrastructure.Migrations
 {
     [DbContext(typeof(SocialBookAppContext))]
-    partial class SocialBookAppContextModelSnapshot : ModelSnapshot
+    [Migration("20260618125419_AddAuthorGenresString")]
+    partial class AddAuthorGenresString
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

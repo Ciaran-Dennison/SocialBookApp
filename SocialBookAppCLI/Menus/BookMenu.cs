@@ -19,7 +19,7 @@ public class BookMenu
         while (true)
         {
             Console.Clear();
-            var bookOptions = new string[] { "Add Book", "Delete Book", "Get User Books", "Add Review", "List All Books", "Back" };
+            var bookOptions = new string[] { "Add Book", "Delete Book", "Get Specific Book" ,"Get User Books", "Add Review", "List All Books", "Back" };
             var bookMenu = new ListInput("bookMenu", "Book Management", bookOptions);
             new Inquirer(bookMenu).Ask();
 
@@ -127,6 +127,38 @@ public class BookMenu
                     break;
 
                 case "3":
+                    var specificIdInput = new Input("id", "Enter book ID to retrieve:");
+                    new Inquirer(specificIdInput).Ask();
+                    if (int.TryParse(specificIdInput.Answer(), out int specificId))
+                    {
+                        try
+                        {
+                            var book = _bookService.GetBookById(specificId);
+                            Console.WriteLine($"ID: {book.Id}");
+                            Console.WriteLine($"Title: {book.Title}");
+                            Console.WriteLine($"ISBN: {book.ISBNNumber}");
+                            Console.WriteLine($"Genre: {book.Genre}");
+                            Console.WriteLine($"Format: {book.Format}");
+                            Console.WriteLine($"Language: {book.Language}");
+                            Console.WriteLine($"Published: {book.Published.ToShortDateString()}");
+                            Console.WriteLine($"Pages: {book.Pages}");
+                            Console.WriteLine($"Chapters: {book.Chapters}");
+                            Console.WriteLine($"Child Friendly: {book.IsChildFriendly}");
+                            Console.WriteLine($"Blurb: {book.Blurb}");
+                            Console.WriteLine($"Rating: {_bookService.GetRatingPercentage(book.Reviews)}");
+                            Console.WriteLine("Press any key to continue...");
+                            Console.ReadKey();
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            Console.WriteLine($"Error: {ex.Message}");
+                            Console.WriteLine("Press any key to continue...");
+                            Console.ReadKey();
+                        }
+                    }
+                    break;
+
+                case "4":
                     var userIdInput = new Input("userId", "Enter user ID:");
                     new Inquirer(userIdInput).Ask();
 
@@ -158,7 +190,7 @@ public class BookMenu
                     }
                     break;
 
-                case "4":
+                case "5":
                     var reviewBookIdInput = new Input("bookId", "Enter book ID:");
                     var reviewUserIdInput = new Input("userId", "Enter user ID:");
                     var ratingInput = new Input("rating", "Enter rating (1-5):");
@@ -191,7 +223,7 @@ public class BookMenu
                     }
                     break;
 
-                case "5":
+                case "6":
                     var allBooks = _bookService.GetAllBooks();
                     if (allBooks.Count == 0)
                     {
@@ -208,7 +240,7 @@ public class BookMenu
                     Console.ReadKey();
                     break;
 
-                case "6":
+                case "7":
                     return;
             }
         }

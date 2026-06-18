@@ -1,5 +1,7 @@
 ﻿
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SocialBookAppDomain;
 
 public class Author
@@ -13,6 +15,16 @@ public class Author
     public string Password { get; set; }
     public List<string> Languages { get; set; } = new List<string>();
     public List<Book> Books { get; set; } = new List<Book>();
-    public List<Genre> Genres { get; set; } = new List<Genre>();
+    public string GenresString { get; set; } = string.Empty;
+
+    [NotMapped]
+    public List<Genre> Genres
+    {
+        get => GenresString
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(g => Enum.Parse<Genre>(g))
+            .ToList();
+        set => GenresString = string.Join(",", value);
+    }
     public List<Review> Reviews { get; set; } = new List<Review>();
 }
