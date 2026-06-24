@@ -17,6 +17,7 @@
           <span class="book-language">🌍 {{ book.language }}</span>
           <span class="book-rating">⭐ {{ getAverageRating(book) }}</span>
         </div>
+        <button class="btn-delete" @click.stop="handleDeleteBook(book.id!)">🗑</button>
       </div>
     </div>
 
@@ -24,16 +25,137 @@
       <p>No books yet — add one to get started!</p>
     </div>
   </div>
+
+  <!-- Add Book Modal -->
+  <div class="modal-overlay" v-if="showAddBook" @click.self="showAddBook = false">
+    <div class="modal">
+      <h2>Add a Book</h2>
+      <form @submit.prevent="submitBook">
+        <input v-model="newBook.title" placeholder="Title" required />
+        <input v-model="newBook.isbnNumber" placeholder="ISBN" type="number" min="1" required />
+        <input v-model="newBook.language" placeholder="Language" required />
+        <input v-model="newBook.pages" placeholder="Pages" type="number" min="1" required />
+        <input v-model="newBook.chapters" placeholder="Chapters" type="number" min="1" required />
+        <textarea v-model="newBook.blurb" placeholder="Blurb" required />
+        <input v-model="newBook.published" placeholder="Published date" type="date" required />
+        <select v-model="newBook.genre">
+          <option
+            v-for="key in Object.keys(Genre).filter((k) => isNaN(Number(k)))"
+            :key="key"
+            :value="Genre[key as keyof typeof Genre]"
+          >
+            {{ key }}
+          </option>
+        </select>
+        <select v-model="newBook.format">
+          <option
+            v-for="key in Object.keys(BookFormat).filter((k) => isNaN(Number(k)))"
+            :key="key"
+            :value="BookFormat[key as keyof typeof BookFormat]"
+          >
+            {{ key }}
+          </option>
+        </select>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="newBook.isChildFriendly" />
+          <span>Child Friendly</span>
+        </label>
+        <div class="modal-buttons">
+          <button type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? 'Adding...' : 'Add Book' }}
+          </button>
+          <button type="button" @click="showAddBook = false">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Book Detail Modal -->
+  <div class="modal-overlay" v-if="selectedBook" @click.self="selectedBook = null">
+    <div class="modal modal-detail">
+      <div class="modal-detail-header">
+        <div class="book-card-header">
+          <span class="genre-badge">{{ selectedBook.genre }}</span>
+          <span class="format-badge">{{ selectedBook.format }}</span>
+        </div>
+        <button class="btn-close" @click="selectedBook = null">✕</button>
+      </div>
+      <h2>{{ selectedBook.title }}</h2>
+      <p class="detail-meta">
+        🌍 {{ selectedBook.language }} · 📄 {{ selectedBook.pages }} pages · 📚
+        {{ selectedBook.chapters }} chapters · 🧒
+        {{ selectedBook.isChildFriendly ? 'Child Friendly' : 'Not Child Friendly' }}
+      </p>
+      <p class="detail-blurb">{{ selectedBook.blurb }}</p>
+      <p class="detail-published">
+        Published: {{ new Date(selectedBook.published).toLocaleDateString() }}
+      </p>
+      <div class="detail-rating">
+        <span>⭐ Average Rating: {{ getAverageRating(selectedBook) }}</span>
+      </div>
+      <button class="btn-primary btn-reviews" @click="showReviews = true">
+        💬 {{ selectedBook.reviews.length }} Reviews
+      </button>
+    </div>
+  </div>
+
+  <!-- Reviews Modal -->
+  <div class="modal-overlay" v-if="showReviews" @click.self="showReviews = false">
+    <div class="modal modal-reviews">
+      <div class="modal-detail-header">
+        <h2>Reviews for {{ selectedBook?.title }}</h2>
+        <button class="btn-close" @click="showReviews = false">✕</button>
+      </div>
+
+      <div v-if="selectedBook?.reviews.length === 0" class="no-reviews">No reviews yet.</div>
+
+      <div class="review-card" v-for="review in selectedBook?.reviews" :key="review.id">
+        <div class="review-header">
+          <span class="review-rating">⭐ {{ review.rating }}</span>
+          <span class="review-date">{{
+            review.createdDate ? new Date(review.createdDate).toLocaleDateString() : ''
+          }}</span>
+        </div>
+        <p class="review-comment">{{ review.comment }}</p>
+      </div>
+
+      <button class="btn-primary btn-add-review" @click="showAddReview = !showAddReview">
+        {{ showAddReview ? 'Cancel' : '+ Add Review' }}
+      </button>
+
+      <form v-if="showAddReview" @submit.prevent="submitReview" class="review-form">
+        <input v-model="newReview.userId" placeholder="User ID" type="number" min="1" required />
+        <input
+          v-model="newReview.rating"
+          placeholder="Rating (1-5)"
+          type="number"
+          min="1"
+          max="5"
+          required
+        />
+        <textarea v-model="newReview.comment" placeholder="Write your review..." required />
+        <div class="modal-buttons">
+          <button type="submit" :disabled="isSubmittingReview">
+            {{ isSubmittingReview ? 'Submitting...' : 'Submit Review' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { getBooks } from '../services/bookService.ts'
+import { getBooks, addBook, deleteBook, addReview } from '../services/bookService.ts'
 import type { Book } from '../types/book.ts'
+import type { Review } from '@/types/review.ts'
+import { Genre, BookFormat } from '../types/enums.ts'
 
 const books = ref<Book[]>([])
 const showAddBook = ref(false)
 const selectedBook = ref<Book | null>(null)
+const showAddReview = ref(false)
+const isSubmittingReview = ref(false)
 
 const selectBook = (book: Book) => {
   selectedBook.value = book
@@ -48,6 +170,89 @@ const getAverageRating = (book: Book): string => {
 onMounted(async () => {
   books.value = await getBooks()
 })
+
+const newBook = ref({
+  title: '',
+  isbnNumber: null as number | null,
+  language: '',
+  pages: null as number | null,
+  chapters: null as number | null,
+  blurb: '',
+  published: '',
+  genre: Genre.Horror,
+  format: BookFormat.Paperback,
+  isChildFriendly: false,
+  authors: [],
+  reviews: [],
+})
+
+const isSubmitting = ref(false)
+
+const submitBook = async () => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  try {
+    await addBook({ ...newBook.value } as Book)
+    books.value = await getBooks()
+    showAddBook.value = false
+    newBook.value = {
+      title: '',
+      isbnNumber: null,
+      language: '',
+      pages: null,
+      chapters: null,
+      blurb: '',
+      published: '',
+      genre: Genre.Horror,
+      format: BookFormat.Paperback,
+      isChildFriendly: false,
+      authors: [],
+      reviews: [],
+    }
+  } catch (error) {
+    console.error('Error adding book:', error)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const handleDeleteBook = async (id: number) => {
+  if (!confirm('Are you sure you want to delete this book?')) return
+  try {
+    await deleteBook(id)
+    books.value = await getBooks()
+  } catch (error) {
+    console.error('Error deleting book:', error)
+  }
+}
+
+const newReview = ref({
+  userId: null as number | null,
+  rating: null as number | null,
+  comment: '',
+})
+
+const submitReview = async () => {
+  if (isSubmittingReview.value) return
+  isSubmittingReview.value = true
+  try {
+    const reviewData = { ...newReview.value } as unknown as Review
+    console.log('Submitting review:', JSON.stringify(reviewData))
+    await addReview(selectedBook.value!.id!, newReview.value.userId!, {
+      ...newReview.value,
+    } as unknown as Review)
+    books.value = await getBooks()
+    selectedBook.value = books.value.find((b) => b.id === selectedBook.value!.id) ?? null
+    showAddReview.value = false
+    newReview.value = { userId: null, rating: null, comment: '' }
+  } catch (error) {
+    console.error('Error submitting review:', error)
+  } finally {
+    isSubmittingReview.value = false
+  }
+}
+
+const showReviews = ref(false)
 </script>
 
 <style scoped>
@@ -162,6 +367,241 @@ onMounted(async () => {
   background: white;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(13, 68, 123, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+}
+
+.modal input:not([type='checkbox']),
+.modal select,
+.modal textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+  border-color: var(--color-primary-mid);
+}
+
+.modal textarea {
+  height: 100px;
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-buttons button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.modal-buttons button[type='submit'] {
+  background-color: var(--color-primary-mid);
+  color: white;
+}
+
+.modal-buttons button[type='button'] {
+  background-color: var(--color-highlight);
+  color: var(--color-primary);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.btn-delete {
+  margin-top: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  float: right;
+}
+
+.btn-delete:hover {
+  opacity: 1;
+}
+
+.modal-reviews {
+  max-width: 500px;
+}
+
+.modal-detail {
+  max-width: 600px;
+}
+
+.modal-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--color-secondary);
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: var(--color-primary);
+}
+
+.detail-meta {
+  color: var(--color-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.detail-blurb {
+  color: #444;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.detail-published {
+  color: var(--color-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.detail-rating {
+  background: var(--color-highlight);
+  color: var(--color-primary);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md);
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.reviews-section h3 {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+.no-reviews {
+  color: var(--color-secondary);
+  text-align: center;
+  padding: 1rem;
+}
+
+.review-card {
+  background: #f0f7ff;
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-reviews {
+  margin-left: auto;
+  display: block;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.review-rating {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.review-date {
+  color: var(--color-secondary);
+  font-size: 0.85rem;
+}
+
+.review-comment {
+  color: #444;
+  margin: 0;
+}
+
+.btn-add-review {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.review-form {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--color-highlight);
+}
+
+.review-form input,
+.review-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.review-form input:focus,
+.review-form textarea:focus {
+  border-color: var(--color-primary-mid);
+}
+
+.review-form textarea {
+  height: 100px;
+  resize: vertical;
 }
 
 @media (max-width: 768px) {
