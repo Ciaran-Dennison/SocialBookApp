@@ -22,7 +22,9 @@ public class BookService : IBookService
 
     public List<Book> GetAllBooks()
     {
-        return _context.Books.ToList();
+        return _context.Books
+            .Include(b => b.Reviews)
+            .ToList();
     }
 
     public Book GetBookById(int id)
