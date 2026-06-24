@@ -14,4 +14,9 @@
   --shadow-sm: 0 2px 8px rgba(13, 68, 123, 0.1);
   --shadow-md: 0 4px 16px rgba(13, 68, 123, 0.15);
   --shadow-lg: 0 8px 32px rgba(13, 68, 123, 0.2);
+  --font-main: 'Nunito', sans-serif;
+}
+
+* {
+  font-family: var(--font-main);
 }
