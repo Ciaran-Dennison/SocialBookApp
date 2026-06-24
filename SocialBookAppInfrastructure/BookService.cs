@@ -65,6 +65,7 @@ public class BookService : IBookService
         if (user == null) throw new ArgumentException("User not found.");
         review.User = user;
         review.Book = book;
+        review.CreatedDate = DateTime.Now;
         _context.Reviews.Add(review);
         _context.SaveChanges();
     }
