@@ -1,0 +1,6 @@
+@SocialBookAPI_HostAddress = http://localhost:5121
+
+GET {{SocialBookAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
