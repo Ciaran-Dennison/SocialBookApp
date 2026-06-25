@@ -32,3 +32,8 @@ export const addLanguage = async (id: number, language: string) => {
 export const updateFavouriteGenres = async (id: number, genres: string[]) => {
   await api.put(`/user/${id}/genres`, genres)
 }
+
+export const getUserByUsername = async (username: string) => {
+  const response = await api.get(`/user/username/${username}`)
+  return response.data
+}

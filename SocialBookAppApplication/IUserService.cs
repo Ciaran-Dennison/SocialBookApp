@@ -17,4 +17,6 @@ public interface IUserService
     public void CreateUser(User user);
 
     public void AddLanguage(string language, int id);
+
+    public User? GetUserByUsername(string username);
 }

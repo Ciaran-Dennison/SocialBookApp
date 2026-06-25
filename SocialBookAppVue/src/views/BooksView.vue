@@ -43,10 +43,22 @@
       <h2>Add a Book</h2>
       <form @submit.prevent="submitBook">
         <input v-model="newBook.title" placeholder="Title" required />
-        <input v-model="newBook.isbnNumber" placeholder="ISBN" type="number" min="1" required />
+        <input
+          v-model.number="newBook.isbnNumber"
+          placeholder="ISBN"
+          type="number"
+          min="1"
+          required
+        />
         <input v-model="newBook.language" placeholder="Language" required />
-        <input v-model="newBook.pages" placeholder="Pages" type="number" min="1" required />
-        <input v-model="newBook.chapters" placeholder="Chapters" type="number" min="1" required />
+        <input v-model.number="newBook.pages" placeholder="Pages" type="number" min="1" required />
+        <input
+          v-model.number="newBook.chapters"
+          placeholder="Chapters"
+          type="number"
+          min="1"
+          required
+        />
         <textarea v-model="newBook.blurb" placeholder="Blurb" required />
         <input v-model="newBook.published" placeholder="Published date" type="date" required />
         <select v-model="newBook.genre">
@@ -138,7 +150,7 @@
       </button>
 
       <form v-if="showAddReview" @submit.prevent="submitReview" class="review-form">
-        <input v-model="newReview.userId" placeholder="User ID" type="number" min="1" required />
+        <input v-model="newReview.userName" placeholder="Username" required />
         <input
           v-model="newReview.rating"
           placeholder="Rating (1-5)"
@@ -259,6 +271,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
+import { getUserByUsername } from '../services/userService.ts'
 import { getBooks, addBook, deleteBook, updateBook, addReview } from '../services/bookService.ts'
 import { useSearchStore } from '../stores/searchStore.ts'
 import type { Book } from '../types/book.ts'
@@ -304,8 +317,8 @@ const newBook = ref({
   chapters: null as number | null,
   blurb: '',
   published: '',
-  genre: Genre.Horror,
-  format: BookFormat.Paperback,
+  genre: 'Horror',
+  format: 'Paperback',
   isChildFriendly: false,
   authors: [],
   reviews: [],
@@ -317,6 +330,7 @@ const submitBook = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
   try {
+    console.log('Adding book:', JSON.stringify({ ...newBook.value }))
     await addBook({ ...newBook.value } as Book)
     books.value = await getBooks()
     showAddBook.value = false
@@ -328,8 +342,8 @@ const submitBook = async () => {
       chapters: null,
       blurb: '',
       published: '',
-      genre: Genre.Horror,
-      format: BookFormat.Paperback,
+      genre: 'Horror',
+      format: 'Paperback',
       isChildFriendly: false,
       authors: [],
       reviews: [],
@@ -352,7 +366,7 @@ const handleDeleteBook = async (id: number) => {
 }
 
 const newReview = ref({
-  userId: null as number | null,
+  userName: '',
   rating: null as number | null,
   comment: '',
 })
@@ -361,15 +375,15 @@ const submitReview = async () => {
   if (isSubmittingReview.value) return
   isSubmittingReview.value = true
   try {
-    const reviewData = { ...newReview.value } as unknown as Review
-    console.log('Submitting review:', JSON.stringify(reviewData))
-    await addReview(selectedBook.value!.id!, newReview.value.userId!, {
-      ...newReview.value,
+    const user = await getUserByUsername(newReview.value.userName)
+    await addReview(selectedBook.value!.id!, user.id!, {
+      rating: newReview.value.rating,
+      comment: newReview.value.comment,
     } as unknown as Review)
     books.value = await getBooks()
     selectedBook.value = books.value.find((b) => b.id === selectedBook.value!.id) ?? null
     showAddReview.value = false
-    newReview.value = { userId: null, rating: null, comment: '' }
+    newReview.value = { userName: '', rating: null, comment: '' }
   } catch (error) {
     console.error('Error submitting review:', error)
   } finally {

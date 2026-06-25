@@ -83,4 +83,11 @@ public class UserService : IUserService
         user.Languages.Add(language);
         _context.SaveChanges();
     }
+
+    public User GetUserByUsername(string username)
+    {
+        var user = _context.Users.FirstOrDefault(u => u.UserName == username);
+        if (user == null) throw new ArgumentException("User not found.");
+        return user;
+    }
 }

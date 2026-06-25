@@ -1,6 +1,5 @@
 import type { Author } from './author.ts'
 import type { Review } from './review.ts'
-import type { BookFormat, Genre } from './enums'
 
 export interface Book {
   id?: number
@@ -8,9 +7,9 @@ export interface Book {
   isbnNumber?: number
   authors: Author[]
   published: string
-  genre: Genre
+  genre: string
   language: string
-  format: BookFormat
+  format: string
   isChildFriendly: boolean
   pages?: number
   chapters?: number

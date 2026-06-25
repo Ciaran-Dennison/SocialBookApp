@@ -26,6 +26,24 @@ public class UserController : ControllerBase
         return Ok(_userService.GetAllUsers());
     }
 
+    /// <summary>
+    /// Gets a user by their username.
+    /// </summary>
+    /// <param name="username">The username of the user.</param>
+    /// <returns>The user with the specified username.</returns>
+    [HttpGet("username/{username}")]
+    public IActionResult GetUserByUsername(string username)
+    {
+        try
+        {
+            var user = _userService.GetUserByUsername(username);
+            return Ok(user);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 
     /// <summary>
     /// Gets a user by their ID.    
