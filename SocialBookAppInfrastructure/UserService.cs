@@ -66,6 +66,7 @@ public class UserService : IUserService
         {
             throw new ArgumentException("User cannot be null");
         }
+        user.CreatedDate = DateTime.Now;
         _context.Users.Add(user);
         _context.SaveChanges();
     }
