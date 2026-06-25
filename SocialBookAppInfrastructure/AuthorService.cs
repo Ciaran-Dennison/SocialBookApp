@@ -85,6 +85,6 @@ public class AuthorService : IAuthorService
         if (existing == null) throw new ArgumentException("Author not found.");
         existing.Languages = author.Languages;
         existing.GenresString = author.GenresString;
-        _context.SaveChanges()
+        _context.SaveChanges();
 }
 }
