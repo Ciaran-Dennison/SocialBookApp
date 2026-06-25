@@ -11,5 +11,5 @@ export interface User {
   createdDate: string
   languages: string[]
   privacyLevel: PrivacyLevel
-  favouriteGenres: Genre[]
+  favouriteGenres: string[]
 }
