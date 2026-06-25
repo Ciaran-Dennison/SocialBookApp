@@ -1,12 +1,17 @@
 <template>
   <div class="books-view">
     <div class="header">
-      <h1>Books</h1>
+      <div class="header-left">
+        <h1>Books</h1>
+        <button class="btn-filter" @click="showFilter = true">
+          <i class="fa-solid fa-filter"></i>
+        </button>
+      </div>
       <button class="btn-primary" @click="showAddBook = true">+ Add Book</button>
     </div>
 
-    <div class="books-grid" v-if="books.length > 0">
-      <div class="book-card" v-for="book in books" :key="book.id" @click="selectBook(book)">
+    <div class="books-grid" v-if="filteredBooks.length > 0">
+      <div class="book-card" v-for="book in filteredBooks" :key="book.id" @click="selectBook(book)">
         <div class="book-card-header">
           <span class="genre-badge">{{ book.genre }}</span>
           <span class="format-badge">{{ book.format }}</span>
@@ -22,7 +27,13 @@
     </div>
 
     <div class="empty-state" v-else>
-      <p>No books yet — add one to get started!</p>
+      <p>
+        {{
+          books.length === 0
+            ? 'No books yet — add one to get started!'
+            : 'No books match your search or filters.'
+        }}
+      </p>
     </div>
   </div>
 
@@ -202,15 +213,59 @@
       </form>
     </div>
   </div>
+
+  <!-- Filter Modal -->
+  <div class="modal-overlay" v-if="showFilter" @click.self="showFilter = false">
+    <div class="modal modal-filter">
+      <div class="modal-detail-header">
+        <h2>Filter Books</h2>
+        <button class="btn-close" @click="showFilter = false">✕</button>
+      </div>
+      <label class="filter-label">Genre</label>
+      <select v-model="genreFilter">
+        <option value="">All Genres</option>
+        <option
+          v-for="key in Object.keys(Genre).filter((k) => isNaN(Number(k)))"
+          :key="key"
+          :value="key"
+        >
+          {{ key }}
+        </option>
+      </select>
+      <label class="filter-label">Format</label>
+      <select v-model="formatFilter">
+        <option value="">All Formats</option>
+        <option
+          v-for="key in Object.keys(BookFormat).filter((k) => isNaN(Number(k)))"
+          :key="key"
+          :value="key"
+        >
+          {{ key }}
+        </option>
+      </select>
+      <label class="filter-label">Child Friendly</label>
+      <select v-model="childFriendlyFilter">
+        <option value="">All</option>
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+      <div class="modal-buttons">
+        <button type="button" class="btn-primary" @click="showFilter = false">Apply</button>
+        <button type="button" @click="clearFilters">Clear</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { getBooks, addBook, deleteBook, updateBook, addReview } from '../services/bookService.ts'
+import { useSearchStore } from '../stores/searchStore.ts'
 import type { Book } from '../types/book.ts'
 import type { Review } from '@/types/review.ts'
 import { Genre, BookFormat } from '../types/enums.ts'
 
+const searchStore = useSearchStore()
 const books = ref<Book[]>([])
 const showAddBook = ref(false)
 const selectedBook = ref<Book | null>(null)
@@ -219,6 +274,17 @@ const isSubmittingReview = ref(false)
 const showUpdateBook = ref(false)
 const isUpdatingBook = ref(false)
 const showReviews = ref(false)
+const showFilter = ref(false)
+const genreFilter = ref('')
+const formatFilter = ref('')
+const childFriendlyFilter = ref('')
+
+const clearFilters = () => {
+  genreFilter.value = ''
+  formatFilter.value = ''
+  childFriendlyFilter.value = ''
+  showFilter.value = false
+}
 
 const selectBook = (book: Book) => {
   selectedBook.value = book
@@ -354,6 +420,17 @@ const submitUpdateBook = async () => {
   }
 }
 
+const filteredBooks = computed(() => {
+  return books.value.filter((b) => {
+    const matchesSearch = b.title.toLowerCase().includes(searchStore.searchTerm.toLowerCase())
+    const matchesGenre = !genreFilter.value || String(b.genre) === genreFilter.value
+    const matchesFormat = !formatFilter.value || String(b.format) === formatFilter.value
+    const matchesChildFriendly =
+      !childFriendlyFilter.value || String(b.isChildFriendly) === childFriendlyFilter.value
+    return matchesSearch && matchesGenre && matchesFormat && matchesChildFriendly
+  })
+})
+
 onMounted(async () => {
   books.value = await getBooks()
 })
@@ -369,6 +446,12 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .header h1 {
@@ -737,6 +820,32 @@ onMounted(async () => {
 .review-form textarea {
   height: 100px;
   resize: vertical;
+}
+
+.btn-filter {
+  background-color: var(--color-primary-mid);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-filter:hover {
+  background-color: var(--color-primary-light);
+}
+
+.modal-filter {
+  max-width: 350px;
+}
+
+.filter-label {
+  display: block;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {

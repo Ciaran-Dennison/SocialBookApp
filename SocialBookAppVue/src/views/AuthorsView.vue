@@ -1,14 +1,19 @@
 <template>
   <div class="authors-view">
     <div class="header">
-      <h1>Authors</h1>
+      <div class="header-left">
+        <h1>Authors</h1>
+        <button class="btn-filter" @click="showFilter = true">
+          <i class="fa-solid fa-filter"></i>
+        </button>
+      </div>
       <button class="btn-primary" @click="showAddAuthor = true">+ Add Author</button>
     </div>
 
-    <div class="authors-grid" v-if="authors.length > 0">
+    <div class="authors-grid" v-if="filteredAuthors.length > 0">
       <div
         class="author-card"
-        v-for="author in authors"
+        v-for="author in filteredAuthors"
         :key="author.id"
         @click="selectedAuthor = author"
       >
@@ -23,7 +28,13 @@
     </div>
 
     <div class="empty-state" v-else>
-      <p>No authors yet — add one to get started!</p>
+      <p>
+        {{
+          authors.length === 0
+            ? 'No authors yet — add one to get started!'
+            : 'No authors match your search or filters.'
+        }}
+      </p>
     </div>
   </div>
 
@@ -103,7 +114,7 @@
         <h2>Filter Books</h2>
         <button class="btn-close" @click="showBookFilter = false">✕</button>
       </div>
-      <label class="filter-label">Genre</label>
+      <label class="filter-label-authors">Genre</label>
       <select v-model="bookGenreFilter">
         <option value="">All Genres</option>
         <option
@@ -191,6 +202,31 @@
       </form>
     </div>
   </div>
+
+  <!-- Filter Modal -->
+  <div class="modal-overlay" v-if="showFilter" @click.self="showFilter = false">
+    <div class="modal modal-filter-authors">
+      <div class="modal-detail-header">
+        <h2>Filter Authors</h2>
+        <button class="btn-close" @click="showFilter = false">✕</button>
+      </div>
+      <label class="filter-label-authors">Genre</label>
+      <select v-model="genreFilter">
+        <option value="">All Genres</option>
+        <option
+          v-for="key in Object.keys(Genre).filter((k) => isNaN(Number(k)))"
+          :key="key"
+          :value="key"
+        >
+          {{ key }}
+        </option>
+      </select>
+      <div class="modal-buttons">
+        <button type="button" class="btn-primary" @click="showFilter = false">Apply</button>
+        <button type="button" @click="clearFilters">Clear</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -207,6 +243,7 @@ import { getBooks } from '../services/bookService.ts'
 import { Genre } from '../types/enums.ts'
 import type { Author } from '../types/author.ts'
 import type { Book } from '../types/book.ts'
+import { useSearchStore } from '../stores/searchStore.ts'
 
 const authors = ref<Author[]>([])
 const books = ref<Book[]>([])
@@ -226,6 +263,24 @@ const updateAuthorLanguages = ref<string[]>([])
 const updateAuthorGenres = ref<string[]>([])
 const showBookFilter = ref(false)
 const bookGenreFilter = ref('')
+const searchStore = useSearchStore()
+const showFilter = ref(false)
+const genreFilter = ref('')
+
+const filteredAuthors = computed(() => {
+  return authors.value.filter((a) => {
+    const matchesSearch = `${a.firstName} ${a.lastName}`
+      .toLowerCase()
+      .includes(searchStore.searchTerm.toLowerCase())
+    const matchesGenre = !genreFilter.value || a.genres.includes(genreFilter.value)
+    return matchesSearch && matchesGenre
+  })
+})
+
+const clearFilters = () => {
+  genreFilter.value = ''
+  showFilter.value = false
+}
 
 // filters the author's books by the search term
 const filteredBooks = computed(() => {
@@ -408,6 +463,12 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .header h1 {
@@ -803,6 +864,32 @@ onMounted(async () => {
 .btn-delete-author:hover {
   background-color: #cc0000;
   transform: translateY(-1px);
+}
+
+.btn-filter-authors {
+  background-color: var(--color-primary-mid);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-filter-authors:hover {
+  background-color: var(--color-primary-light);
+}
+
+.modal-filter-authors {
+  max-width: 350px;
+}
+
+.filter-label-authors {
+  display: block;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {
