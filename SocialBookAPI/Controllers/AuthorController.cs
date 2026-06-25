@@ -132,4 +132,25 @@ public class AuthorController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+
+    /// <summary>
+    /// Updates an existing author's information.
+    /// </summary>
+    /// <param name="id">The ID of the author to update.</param>
+    /// <param name="author">The updated author information.</param>
+    /// <returns>The result of the update operation.</returns>
+    [HttpPut("{id}")]
+    public IActionResult UpdateAuthor(int id, [FromBody] Author author)
+    {
+        try
+        {
+            _authorService.UpdateAuthor(id, author);
+            return Ok();
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 }

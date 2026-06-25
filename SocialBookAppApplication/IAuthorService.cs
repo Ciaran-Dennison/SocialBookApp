@@ -14,5 +14,6 @@ public interface IAuthorService : IRatingService
 
     public void AddAuthor(Author author);
     public void AssignBookToAuthor(int authorId, int bookId);
-    void UnassignBookFromAuthor(int authorId, int bookId);
+    public void UnassignBookFromAuthor(int authorId, int bookId);
+    public void UpdateAuthor(int id, Author author);
 }
