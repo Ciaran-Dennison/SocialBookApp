@@ -44,8 +44,12 @@ public class BookService : IBookService
 
     public void DeleteBook(int id)
     {
-        var book = GetBookById(id);
+        var book = _context.Books
+            .Include(b => b.Reviews)
+            .FirstOrDefault(b => b.Id == id);
         if (book == null) throw new ArgumentException("Book not found.");
+
+        _context.Reviews.RemoveRange(book.Reviews);
         _context.Books.Remove(book);
         _context.SaveChanges();
     }
