@@ -19,7 +19,7 @@ public class AuthorService : IAuthorService
     {
         return _context.Authors
             .Include(a => a.Books)
-            .Include(a => a.Reviews)
+                .ThenInclude(b => b.Reviews)
             .ToList();
     }
 
@@ -63,5 +63,19 @@ public class AuthorService : IAuthorService
     public double GetRatingPercentage(List<Review> reviews)
     {
         return _ratingService.GetRatingPercentage(reviews);
+    }
+
+    public void UnassignBookFromAuthor(int authorId, int bookId)
+    {
+        var author = _context.Authors
+            .Include(a => a.Books)
+            .FirstOrDefault(a => a.Id == authorId);
+        if (author == null) throw new ArgumentException("Author not found.");
+
+        var book = author.Books.FirstOrDefault(b => b.Id == bookId);
+        if (book == null) throw new ArgumentException("Book not assigned to this author.");
+
+        author.Books.Remove(book);
+        _context.SaveChanges();
     }
 }

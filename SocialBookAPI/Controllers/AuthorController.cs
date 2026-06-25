@@ -93,6 +93,11 @@ public class AuthorController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets the rating percentage of an author based on their reviews.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}/rating")]
     public IActionResult GetRatingPercentage(int id)
     {
@@ -101,6 +106,26 @@ public class AuthorController : ControllerBase
             var author = _authorService.GetAuthorById(id);
             var ratingPercentage = _authorService.GetRatingPercentage(author.Reviews);
             return Ok(ratingPercentage);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Unassigns a book from a specific author.
+    /// </summary>
+    /// <param name="authorId">The ID of the author.</param>
+    /// <param name="bookId">The ID of the book.</param>
+    /// <returns>The result of the unassign operation.</returns>
+    [HttpDelete("{authorId}/book/{bookId}")]
+    public IActionResult UnassignBookFromAuthor(int authorId, int bookId)
+    {
+        try
+        {
+            _authorService.UnassignBookFromAuthor(authorId, bookId);
+            return Ok();
         }
         catch (ArgumentException ex)
         {
