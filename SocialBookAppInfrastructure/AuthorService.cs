@@ -86,5 +86,13 @@ public class AuthorService : IAuthorService
         existing.Languages = author.Languages;
         existing.GenresString = author.GenresString;
         _context.SaveChanges();
-}
+    }
+
+    public void DeleteAuthor(int id)
+    {
+        var author = _context.Authors.FirstOrDefault(a => a.Id == id);
+        if (author == null) throw new ArgumentException("Author not found.");
+        _context.Authors.Remove(author);
+        _context.SaveChanges();
+    }
 }

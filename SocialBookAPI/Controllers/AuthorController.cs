@@ -153,4 +153,23 @@ public class AuthorController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Deletes an author by their ID.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpDelete("{id}")]
+    public IActionResult DeleteAuthor(int id)
+    {
+        try
+        {
+            _authorService.DeleteAuthor(id);
+            return Ok();
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 }
