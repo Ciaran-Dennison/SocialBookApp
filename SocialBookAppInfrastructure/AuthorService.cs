@@ -17,12 +17,16 @@ public class AuthorService : IAuthorService
 
     public List<Author> GetAllAuthors()
     {
-        return _context.Authors.ToList();
+        return _context.Authors
+            .Include(a => a.Books)
+            .Include(a => a.Reviews)
+            .ToList();
     }
 
     public Author GetAuthorById(int id)
     {
         var author = _context.Authors
+            .Include(a => a.Books)
             .Include(a => a.Reviews)
             .FirstOrDefault(a => a.Id == id);
         if (author == null) throw new ArgumentException("Author not found.");
