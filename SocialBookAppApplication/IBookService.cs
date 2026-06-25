@@ -15,4 +15,6 @@ public interface IBookService : IRatingService
     public List<Book> GetUserBooks(int userId);
 
     public void AddReview(int bookId, int userId, Review review);
+
+    void UpdateBook(int id, Book book);
 }

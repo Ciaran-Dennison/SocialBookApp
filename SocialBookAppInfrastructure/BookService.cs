@@ -73,4 +73,20 @@ public class BookService : IBookService
         _context.Reviews.Add(review);
         _context.SaveChanges();
     }
+
+    public void UpdateBook(int id, Book book)
+    {
+        var existing = _context.Books.FirstOrDefault(b => b.Id == id);
+        if (existing == null) throw new ArgumentException("Book not found.");
+        existing.Title = book.Title;
+        existing.Blurb = book.Blurb;
+        existing.Language = book.Language;
+        existing.Genre = book.Genre;
+        existing.Format = book.Format;
+        existing.IsChildFriendly = book.IsChildFriendly;
+        existing.Pages = book.Pages;
+        existing.Chapters = book.Chapters;
+        existing.Published = book.Published;
+        _context.SaveChanges();
+    }
 }

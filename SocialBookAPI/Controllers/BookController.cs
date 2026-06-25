@@ -136,4 +136,24 @@ public class BookController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Updates a book by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the book to update.</param>
+    /// <param name="book">The updated book information.</param>
+    /// <returns>An IActionResult indicating the result of the operation.</returns>
+    [HttpPut("{id}")]
+    public IActionResult UpdateBook(int id, [FromBody] Book book)
+    {
+        try
+        {
+            _bookService.UpdateBook(id, book);
+            return Ok();
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 }

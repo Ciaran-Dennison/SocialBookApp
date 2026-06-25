@@ -93,9 +93,12 @@
       <div class="detail-rating">
         <span>⭐ Average Rating: {{ getAverageRating(selectedBook) }}</span>
       </div>
-      <button class="btn-primary btn-reviews" @click="showReviews = true">
-        💬 {{ selectedBook.reviews.length }} Reviews
-      </button>
+      <div class="detail-actions">
+        <button class="btn-secondary" @click="showUpdateBook = true">✏️ Update Book</button>
+        <button class="btn-primary btn-reviews" @click="showReviews = true">
+          💬 {{ selectedBook.reviews.length }} Reviews
+        </button>
+      </div>
     </div>
   </div>
 
@@ -142,11 +145,68 @@
       </form>
     </div>
   </div>
+
+  <!-- Update Book Modal -->
+  <div class="modal-overlay" v-if="showUpdateBook" @click.self="showUpdateBook = false">
+    <div class="modal">
+      <div class="modal-detail-header">
+        <h2>Update Book</h2>
+        <button class="btn-close" @click="showUpdateBook = false">✕</button>
+      </div>
+      <form @submit.prevent="submitUpdateBook">
+        <input v-model="updateBookData.title" placeholder="Title" required />
+        <input v-model="updateBookData.language" placeholder="Language" required />
+        <input v-model="updateBookData.pages" placeholder="Pages" type="number" min="1" required />
+        <input
+          v-model="updateBookData.chapters"
+          placeholder="Chapters"
+          type="number"
+          min="1"
+          required
+        />
+        <textarea v-model="updateBookData.blurb" placeholder="Blurb" required />
+        <input
+          v-model="updateBookData.published"
+          placeholder="Published date"
+          type="date"
+          required
+        />
+        <select v-model="updateBookData.genre">
+          <option
+            v-for="key in Object.keys(Genre).filter((k) => isNaN(Number(k)))"
+            :key="key"
+            :value="key"
+          >
+            {{ key }}
+          </option>
+        </select>
+        <select v-model="updateBookData.format">
+          <option
+            v-for="key in Object.keys(BookFormat).filter((k) => isNaN(Number(k)))"
+            :key="key"
+            :value="key"
+          >
+            {{ key }}
+          </option>
+        </select>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="updateBookData.isChildFriendly" />
+          <span>Child Friendly</span>
+        </label>
+        <div class="modal-buttons">
+          <button type="submit" :disabled="isUpdatingBook">
+            {{ isUpdatingBook ? 'Updating...' : 'Update Book' }}
+          </button>
+          <button type="button" @click="showUpdateBook = false">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { getBooks, addBook, deleteBook, addReview } from '../services/bookService.ts'
+import { onMounted, ref, watch } from 'vue'
+import { getBooks, addBook, deleteBook, updateBook, addReview } from '../services/bookService.ts'
 import type { Book } from '../types/book.ts'
 import type { Review } from '@/types/review.ts'
 import { Genre, BookFormat } from '../types/enums.ts'
@@ -156,6 +216,9 @@ const showAddBook = ref(false)
 const selectedBook = ref<Book | null>(null)
 const showAddReview = ref(false)
 const isSubmittingReview = ref(false)
+const showUpdateBook = ref(false)
+const isUpdatingBook = ref(false)
+const showReviews = ref(false)
 
 const selectBook = (book: Book) => {
   selectedBook.value = book
@@ -166,10 +229,6 @@ const getAverageRating = (book: Book): string => {
   const avg = book.reviews.reduce((sum, r) => sum + r.rating, 0) / book.reviews.length
   return avg.toFixed(1)
 }
-
-onMounted(async () => {
-  books.value = await getBooks()
-})
 
 const newBook = ref({
   title: '',
@@ -252,7 +311,52 @@ const submitReview = async () => {
   }
 }
 
-const showReviews = ref(false)
+const updateBookData = ref({
+  title: '',
+  language: '',
+  pages: null as number | null,
+  chapters: null as number | null,
+  blurb: '',
+  published: '',
+  genre: '',
+  format: '',
+  isChildFriendly: false,
+})
+
+watch(showUpdateBook, (val) => {
+  if (val && selectedBook.value) {
+    updateBookData.value = {
+      title: selectedBook.value.title,
+      language: selectedBook.value.language,
+      pages: selectedBook.value.pages ?? null,
+      chapters: selectedBook.value.chapters ?? null,
+      blurb: selectedBook.value.blurb,
+      published: selectedBook.value.published?.split('T')[0] ?? '',
+      genre: String(selectedBook.value.genre),
+      format: String(selectedBook.value.format),
+      isChildFriendly: selectedBook.value.isChildFriendly,
+    }
+  }
+})
+
+const submitUpdateBook = async () => {
+  if (isUpdatingBook.value || !selectedBook.value) return
+  isUpdatingBook.value = true
+  try {
+    await updateBook(selectedBook.value.id!, { ...updateBookData.value } as unknown as Book)
+    books.value = await getBooks()
+    selectedBook.value = books.value.find((b) => b.id === selectedBook.value!.id) ?? null
+    showUpdateBook.value = false
+  } catch (error) {
+    console.error('Error updating book:', error)
+  } finally {
+    isUpdatingBook.value = false
+  }
+}
+
+onMounted(async () => {
+  books.value = await getBooks()
+})
 </script>
 
 <style scoped>
@@ -498,6 +602,31 @@ const showReviews = ref(false)
   color: var(--color-primary);
 }
 
+.btn-secondary {
+  background-color: var(--color-highlight);
+  color: var(--color-primary);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.btn-update {
+  margin-left: auto;
+  display: block;
+  margin-top: 1rem;
+}
+
 .detail-meta {
   color: var(--color-secondary);
   font-size: 0.9rem;
@@ -526,6 +655,13 @@ const showReviews = ref(false)
   font-weight: 600;
 }
 
+.detail-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
 .reviews-section h3 {
   color: var(--color-primary);
   margin-bottom: 1rem;
@@ -547,7 +683,6 @@ const showReviews = ref(false)
 
 .btn-reviews {
   margin-left: auto;
-  display: block;
 }
 
 .review-header {

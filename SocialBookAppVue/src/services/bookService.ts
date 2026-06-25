@@ -35,3 +35,8 @@ export const addBook = async (book: Book) => {
 export const deleteBook = async (id: number) => {
   await api.delete(`/book/${id}`)
 }
+
+export const updateBook = async (id: number, book: Book) => {
+  const response = await api.put(`/book/${id}`, book)
+  return response.data
+}
