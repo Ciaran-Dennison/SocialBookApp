@@ -46,6 +46,8 @@ public class UserService : IUserService
         existingUser.LastName = user.LastName;
         existingUser.Email = user.Email;
         existingUser.PrivacyLevel = user.PrivacyLevel;
+        existingUser.Languages = user.Languages;
+        existingUser.FavouriteGenresString = user.FavouriteGenresString;
         _context.SaveChanges();
     }
 
