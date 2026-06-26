@@ -279,7 +279,6 @@ const filteredAuthors = computed(() => {
 
 const clearFilters = () => {
   genreFilter.value = ''
-  showFilter.value = false
 }
 
 // filters the author's books by the search term
@@ -294,7 +293,6 @@ const filteredBooks = computed(() => {
 
 const clearBookFilter = () => {
   bookGenreFilter.value = ''
-  showBookFilter.value = false
 }
 
 // filters all books by the search term to allow for easy assignment

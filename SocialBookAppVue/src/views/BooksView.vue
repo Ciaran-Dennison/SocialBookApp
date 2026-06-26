@@ -296,7 +296,6 @@ const clearFilters = () => {
   genreFilter.value = ''
   formatFilter.value = ''
   childFriendlyFilter.value = ''
-  showFilter.value = false
 }
 
 const selectBook = (book: Book) => {

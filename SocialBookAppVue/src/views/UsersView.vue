@@ -244,7 +244,6 @@ const filteredUsers = computed(() => {
 const clearFilters = () => {
   privacyFilter.value = ''
   genreFilter.value = ''
-  showFilter.value = false
 }
 
 const selectUser = (user: User) => {
