@@ -270,6 +270,8 @@
 </template>
 
 <script setup lang="ts">
+// --- Imports ---
+
 import { onMounted, ref, watch, computed } from 'vue'
 import { getUserByUsername } from '../services/userService.ts'
 import { getBooks, addBook, deleteBook, updateBook, addReview } from '../services/bookService.ts'
@@ -278,36 +280,74 @@ import type { Book } from '../types/book.ts'
 import type { Review } from '@/types/review.ts'
 import { Genre, BookFormat } from '../types/enums.ts'
 
+// --- State ---
+
+// Global search store shared across all views via the navbar search bar
 const searchStore = useSearchStore()
+
+// Book data fetched from the API
 const books = ref<Book[]>([])
-const showAddBook = ref(false)
+
+// Currently selected book, drives the detail modal
 const selectedBook = ref<Book | null>(null)
-const showAddReview = ref(false)
-const isSubmittingReview = ref(false)
-const showUpdateBook = ref(false)
-const isUpdatingBook = ref(false)
+
+// Modal visibility toggles
+const showAddBook = ref(false)
 const showReviews = ref(false)
+const showUpdateBook = ref(false)
 const showFilter = ref(false)
+const showAddReview = ref(false)
+
+// Filter values for the book grid
 const genreFilter = ref('')
 const formatFilter = ref('')
 const childFriendlyFilter = ref('')
 
-const clearFilters = () => {
-  genreFilter.value = ''
-  formatFilter.value = ''
-  childFriendlyFilter.value = ''
-}
+// Loading states to prevent duplicate submissions
+const isSubmitting = ref(false)
+const isSubmittingReview = ref(false)
+const isUpdatingBook = ref(false)
 
+// --- Helpers ---
+
+// Sets the selected book to drive the detail modal
 const selectBook = (book: Book) => {
   selectedBook.value = book
 }
 
+// Calculates the average rating from a book's reviews
 const getAverageRating = (book: Book): string => {
   if (book.reviews.length === 0) return 'No ratings'
   const avg = book.reviews.reduce((sum, r) => sum + r.rating, 0) / book.reviews.length
   return avg.toFixed(1)
 }
 
+// --- Filter actions ---
+
+// Resets all book grid filters
+const clearFilters = () => {
+  genreFilter.value = ''
+  formatFilter.value = ''
+  childFriendlyFilter.value = ''
+}
+
+// --- Computed ---
+
+// Filters the book grid by the navbar search term and any active filters
+const filteredBooks = computed(() => {
+  return books.value.filter((b) => {
+    const matchesSearch = b.title.toLowerCase().includes(searchStore.searchTerm.toLowerCase())
+    const matchesGenre = !genreFilter.value || String(b.genre) === genreFilter.value
+    const matchesFormat = !formatFilter.value || String(b.format) === formatFilter.value
+    const matchesChildFriendly =
+      !childFriendlyFilter.value || String(b.isChildFriendly) === childFriendlyFilter.value
+    return matchesSearch && matchesGenre && matchesFormat && matchesChildFriendly
+  })
+})
+
+// --- Form data ---
+
+// Add book form data with default values
 const newBook = ref({
   title: '',
   isbnNumber: null as number | null,
@@ -323,8 +363,29 @@ const newBook = ref({
   reviews: [],
 })
 
-const isSubmitting = ref(false)
+// Update book form data - pre-populated when the update modal opens
+const updateBookData = ref({
+  title: '',
+  language: '',
+  pages: null as number | null,
+  chapters: null as number | null,
+  blurb: '',
+  published: '',
+  genre: '',
+  format: '',
+  isChildFriendly: false,
+})
 
+// Add review form data
+const newReview = ref({
+  userName: '',
+  rating: null as number | null,
+  comment: '',
+})
+
+// --- API actions ---
+
+// Submits the add book form and refreshes the book list
 const submitBook = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
@@ -333,6 +394,7 @@ const submitBook = async () => {
     await addBook({ ...newBook.value } as Book)
     books.value = await getBooks()
     showAddBook.value = false
+    // Reset form to defaults after successful submission
     newBook.value = {
       title: '',
       isbnNumber: null,
@@ -354,6 +416,7 @@ const submitBook = async () => {
   }
 }
 
+// Deletes a book after confirmation and refreshes the book list
 const handleDeleteBook = async (id: number) => {
   if (!confirm('Are you sure you want to delete this book?')) return
   try {
@@ -364,12 +427,7 @@ const handleDeleteBook = async (id: number) => {
   }
 }
 
-const newReview = ref({
-  userName: '',
-  rating: null as number | null,
-  comment: '',
-})
-
+// Looks up the user by username then submits a review for the selected book
 const submitReview = async () => {
   if (isSubmittingReview.value) return
   isSubmittingReview.value = true
@@ -380,6 +438,7 @@ const submitReview = async () => {
       comment: newReview.value.comment,
     } as unknown as Review)
     books.value = await getBooks()
+    // Re-selects the same book from fresh data so the reviews list updates
     selectedBook.value = books.value.find((b) => b.id === selectedBook.value!.id) ?? null
     showAddReview.value = false
     newReview.value = { userName: '', rating: null, comment: '' }
@@ -390,18 +449,10 @@ const submitReview = async () => {
   }
 }
 
-const updateBookData = ref({
-  title: '',
-  language: '',
-  pages: null as number | null,
-  chapters: null as number | null,
-  blurb: '',
-  published: '',
-  genre: '',
-  format: '',
-  isChildFriendly: false,
-})
+// --- Update book form ---
 
+// Pre-populates the update form with the selected book's existing values when the modal opens
+// published is split on 'T' to strip the time component for the date input
 watch(showUpdateBook, (val) => {
   if (val && selectedBook.value) {
     updateBookData.value = {
@@ -418,6 +469,7 @@ watch(showUpdateBook, (val) => {
   }
 })
 
+// Submits the update book form and refreshes the selected book from fresh data
 const submitUpdateBook = async () => {
   if (isUpdatingBook.value || !selectedBook.value) return
   isUpdatingBook.value = true
@@ -433,27 +485,23 @@ const submitUpdateBook = async () => {
   }
 }
 
-const filteredBooks = computed(() => {
-  return books.value.filter((b) => {
-    const matchesSearch = b.title.toLowerCase().includes(searchStore.searchTerm.toLowerCase())
-    const matchesGenre = !genreFilter.value || String(b.genre) === genreFilter.value
-    const matchesFormat = !formatFilter.value || String(b.format) === formatFilter.value
-    const matchesChildFriendly =
-      !childFriendlyFilter.value || String(b.isChildFriendly) === childFriendlyFilter.value
-    return matchesSearch && matchesGenre && matchesFormat && matchesChildFriendly
-  })
-})
+// --- Lifecycle ---
 
+// Fetches all books when the component mounts
 onMounted(async () => {
   books.value = await getBooks()
 })
 </script>
 
 <style scoped>
+/* --- Page Layout --- */
+
+/* Main page container */
 .books-view {
   padding: 1rem;
 }
 
+/* Page header - space between title/filter and add button */
 .header {
   display: flex;
   justify-content: space-between;
@@ -461,6 +509,7 @@ onMounted(async () => {
   margin-bottom: 2rem;
 }
 
+/* Groups the title and filter button together on the left */
 .header-left {
   display: flex;
   align-items: center;
@@ -473,31 +522,16 @@ onMounted(async () => {
   margin: 0;
 }
 
-.btn-primary {
-  background-color: var(--color-primary-mid);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius-full);
-  cursor: pointer;
-  font-size: 1rem;
-  box-shadow: var(--shadow-sm);
-  transition:
-    background-color 0.2s,
-    transform 0.1s;
-}
+/* --- Book Cards --- */
 
-.btn-primary:hover {
-  background-color: var(--color-primary-light);
-  transform: translateY(-1px);
-}
-
+/* Responsive grid that auto-fills columns at minimum 280px wide */
 .books-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
+/* Individual book card */
 .book-card {
   background: white;
   border-radius: var(--border-radius-lg);
@@ -509,17 +543,20 @@ onMounted(async () => {
     box-shadow 0.2s;
 }
 
+/* Lifts card on hover for a tactile feel */
 .book-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
 
+/* Row of genre and format badges at the top of each card */
 .book-card-header {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
+/* Small pill badge for genre - teal background */
 .genre-badge,
 .format-badge {
   background-color: var(--color-highlight);
@@ -530,6 +567,7 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* Format badge uses a slightly different colour to distinguish from genre */
 .format-badge {
   background-color: var(--color-accent);
 }
@@ -540,6 +578,7 @@ onMounted(async () => {
   margin: 0 0 0.75rem 0;
 }
 
+/* Blurb truncated to 3 lines to keep cards a consistent height */
 .book-blurb {
   color: #666;
   font-size: 0.9rem;
@@ -552,6 +591,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+/* Card footer with language and rating side by side */
 .book-footer {
   display: flex;
   justify-content: space-between;
@@ -560,6 +600,7 @@ onMounted(async () => {
   font-size: 0.85rem;
 }
 
+/* Shown when no books exist or none match the current filters */
 .empty-state {
   text-align: center;
   padding: 4rem;
@@ -569,6 +610,9 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
 }
 
+/* --- Modals --- */
+
+/* Full screen semi-transparent overlay behind all modals */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -582,6 +626,7 @@ onMounted(async () => {
   z-index: 100;
 }
 
+/* Base modal container - scrollable for long content */
 .modal {
   background: white;
   padding: 2rem;
@@ -598,6 +643,8 @@ onMounted(async () => {
   margin-bottom: 1.5rem;
 }
 
+/* Shared input, select and textarea styles inside modals
+   excludes checkboxes which have their own styling */
 .modal input:not([type='checkbox']),
 .modal select,
 .modal textarea {
@@ -611,17 +658,20 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+/* Highlight border on focus */
 .modal input:focus,
 .modal select:focus,
 .modal textarea:focus {
   border-color: var(--color-primary-mid);
 }
 
+/* Fixed height textarea that can be resized vertically */
 .modal textarea {
   height: 100px;
   resize: vertical;
 }
 
+/* Right-aligned confirm/cancel buttons at the bottom of forms */
 .modal-buttons {
   display: flex;
   gap: 1rem;
@@ -646,6 +696,7 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
+/* Checkbox row with label aligned alongside it */
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -655,49 +706,29 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.btn-delete {
-  margin-top: 0.75rem;
-  background: none;
+/* --- Buttons --- */
+
+/* Primary action button - dark blue */
+.btn-primary {
+  background-color: var(--color-primary-mid);
+  color: white;
   border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-full);
   cursor: pointer;
-  font-size: 1.1rem;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-  float: right;
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
 }
 
-.btn-delete:hover {
-  opacity: 1;
+.btn-primary:hover {
+  background-color: var(--color-primary-light);
+  transform: translateY(-1px);
 }
 
-.modal-reviews {
-  max-width: 500px;
-}
-
-.modal-detail {
-  max-width: 600px;
-}
-
-.modal-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  cursor: pointer;
-  color: var(--color-secondary);
-  transition: color 0.2s;
-}
-
-.btn-close:hover {
-  color: var(--color-primary);
-}
-
+/* Secondary action button - light teal */
 .btn-secondary {
   background-color: var(--color-highlight);
   color: var(--color-primary);
@@ -717,30 +748,107 @@ onMounted(async () => {
   transform: translateY(-1px);
 }
 
+/* Invisible delete button on book cards - fades in on hover */
+.btn-delete {
+  margin-top: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  float: right;
+}
+
+.btn-delete:hover {
+  opacity: 1;
+}
+
+/* Invisible close button in modal headers */
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--color-secondary);
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: var(--color-primary);
+}
+
+/* Filter icon button */
+.btn-filter {
+  background-color: var(--color-primary-mid);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-filter:hover {
+  background-color: var(--color-primary-light);
+}
+
+/* Unused legacy update button class */
 .btn-update {
   margin-left: auto;
   display: block;
   margin-top: 1rem;
 }
 
+/* Reviews button pushed to the right in the detail actions row */
+.btn-reviews {
+  margin-left: auto;
+}
+
+/* Full width add review toggle button */
+.btn-add-review {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* --- Detail Modal --- */
+
+/* Wider modal for the book detail view */
+.modal-detail {
+  max-width: 600px;
+}
+
+/* Header row inside detail modals with title/badges and close button */
+.modal-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+/* Secondary info text in detail modals */
 .detail-meta {
   color: var(--color-secondary);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
+/* Full blurb text in the detail modal */
 .detail-blurb {
   color: #444;
   line-height: 1.6;
   margin-bottom: 1rem;
 }
 
+/* Published date in the detail modal */
 .detail-published {
   color: var(--color-secondary);
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }
 
+/* Highlighted rating pill in detail modals */
 .detail-rating {
   background: var(--color-highlight);
   color: var(--color-primary);
@@ -751,6 +859,7 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* Row of action buttons at the bottom of the detail modal */
 .detail-actions {
   display: flex;
   gap: 1rem;
@@ -758,17 +867,26 @@ onMounted(async () => {
   margin-top: 1rem;
 }
 
+/* --- Reviews Modal --- */
+
+/* Narrower modal for the reviews list */
+.modal-reviews {
+  max-width: 500px;
+}
+
 .reviews-section h3 {
   color: var(--color-primary);
   margin-bottom: 1rem;
 }
 
+/* Shown when a book has no reviews yet */
 .no-reviews {
   color: var(--color-secondary);
   text-align: center;
   padding: 1rem;
 }
 
+/* Individual review card in the reviews list */
 .review-card {
   background: #f0f7ff;
   border-radius: var(--border-radius-md);
@@ -777,10 +895,7 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
 }
 
-.btn-reviews {
-  margin-left: auto;
-}
-
+/* Row with rating and date side by side */
 .review-header {
   display: flex;
   justify-content: space-between;
@@ -802,17 +917,15 @@ onMounted(async () => {
   margin: 0;
 }
 
-.btn-add-review {
-  margin-top: 1rem;
-  width: 100%;
-}
-
+/* Add review form revealed by toggling the add review button */
 .review-form {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 2px solid var(--color-highlight);
 }
 
+/* Inputs inside the review form - defined separately from .modal input
+   since the review form sits inside an existing modal */
 .review-form input,
 .review-form textarea {
   width: 100%;
@@ -835,25 +948,14 @@ onMounted(async () => {
   resize: vertical;
 }
 
-.btn-filter {
-  background-color: var(--color-primary-mid);
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
+/* --- Filter Modal --- */
 
-.btn-filter:hover {
-  background-color: var(--color-primary-light);
-}
-
+/* Narrow filter modal */
 .modal-filter {
   max-width: 350px;
 }
 
+/* Label above filter dropdowns */
 .filter-label {
   display: block;
   color: var(--color-primary);
@@ -861,11 +963,15 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
+/* --- Responsive --- */
+
 @media (max-width: 768px) {
+  /* Single column on mobile */
   .books-grid {
     grid-template-columns: 1fr;
   }
 
+  /* Stack header vertically on mobile */
   .header {
     flex-direction: column;
     gap: 1rem;

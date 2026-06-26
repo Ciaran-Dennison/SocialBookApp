@@ -230,6 +230,8 @@
 </template>
 
 <script setup lang="ts">
+// --- Imports ---
+
 import { onMounted, ref, computed, watch } from 'vue'
 import {
   getAuthors,
@@ -245,28 +247,46 @@ import type { Author } from '../types/author.ts'
 import type { Book } from '../types/book.ts'
 import { useSearchStore } from '../stores/searchStore.ts'
 
+// --- State ---
+
+// Author data fetched from the API
 const authors = ref<Author[]>([])
+// All books fetched from the API, used for the assign book search
 const books = ref<Book[]>([])
+// Currently selected author, drives the detail modal
 const selectedAuthor = ref<Author | null>(null)
+
+// Modal visibility toggles
 const showAddAuthor = ref(false)
 const showBooks = ref(false)
 const showAssignBook = ref(false)
-const bookSearch = ref('')
-const assignBookSearch = ref('')
+const showUpdateAuthor = ref(false)
+const showBookFilter = ref(false)
+const showFilter = ref(false)
+
+// Search and filter values
+const bookSearch = ref('') // search term for the author's assigned book list
+const assignBookSearch = ref('') // search term for the assign book modal
+const bookGenreFilter = ref('') // genre filter for the author's assigned book list
+const genreFilter = ref('') // genre filter for the main author grid
+
+// Update author form input values
+const updateAuthorLanguage = ref('') // current language being typed before adding
+const updateAuthorGenre = ref('') // current genre being selected before adding
+const updateAuthorLanguages = ref<string[]>([]) // accumulated list of languages to save
+const updateAuthorGenres = ref<string[]>([]) // accumulated list of genres to save
+
+// Loading states to prevent duplicate submissions
 const isSubmitting = ref(false)
 const isAssigning = ref(false)
-const showUpdateAuthor = ref(false)
 const isUpdating = ref(false)
-const updateAuthorLanguage = ref('')
-const updateAuthorGenre = ref('')
-const updateAuthorLanguages = ref<string[]>([])
-const updateAuthorGenres = ref<string[]>([])
-const showBookFilter = ref(false)
-const bookGenreFilter = ref('')
-const searchStore = useSearchStore()
-const showFilter = ref(false)
-const genreFilter = ref('')
 
+// Global search store shared across all views via the navbar search bar
+const searchStore = useSearchStore()
+
+// --- Computed ---
+
+// Filters the author grid by the navbar search term and the genre filter
 const filteredAuthors = computed(() => {
   return authors.value.filter((a) => {
     const matchesSearch = `${a.firstName} ${a.lastName}`
@@ -277,11 +297,7 @@ const filteredAuthors = computed(() => {
   })
 })
 
-const clearFilters = () => {
-  genreFilter.value = ''
-}
-
-// filters the author's books by the search term
+// Filters the selected author's assigned books by search term and genre
 const filteredBooks = computed(() => {
   if (!selectedAuthor.value) return []
   return selectedAuthor.value.books.filter((b) => {
@@ -291,11 +307,7 @@ const filteredBooks = computed(() => {
   })
 })
 
-const clearBookFilter = () => {
-  bookGenreFilter.value = ''
-}
-
-// filters all books by the search term to allow for easy assignment
+// Filters all books for the assign book search modal
 const filteredAssignBooks = computed(() => {
   if (!assignBookSearch.value) return books.value
   return books.value.filter((b) =>
@@ -303,7 +315,9 @@ const filteredAssignBooks = computed(() => {
   )
 })
 
-// calculates average rating from the average rating of each assigned book
+// --- Helpers ---
+
+// Calculates average rating by averaging each assigned book's own average rating
 const getAverageRating = (author: Author): string => {
   const booksWithReviews = author.books.filter((b) => b.reviews.length > 0)
   if (booksWithReviews.length === 0) return 'No ratings'
@@ -314,6 +328,20 @@ const getAverageRating = (author: Author): string => {
     }, 0) / booksWithReviews.length
   return avg.toFixed(1)
 }
+
+// --- Filter actions ---
+
+// Clears the author grid genre filter
+const clearFilters = () => {
+  genreFilter.value = ''
+}
+
+// Clears the assigned book list genre filter
+const clearBookFilter = () => {
+  bookGenreFilter.value = ''
+}
+
+// --- Form data ---
 
 const newAuthor = ref({
   firstName: '',
@@ -327,6 +355,9 @@ const newAuthor = ref({
   reviews: [],
 })
 
+// --- API actions ---
+
+// Submits the add author form and refreshes the author list
 const submitAuthor = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
@@ -352,6 +383,7 @@ const submitAuthor = async () => {
   }
 }
 
+// Assigns a book to the selected author and refreshes the author data
 const submitAssignBook = async (bookId: number) => {
   if (isAssigning.value || !selectedAuthor.value) return
   isAssigning.value = true
@@ -370,7 +402,7 @@ const submitAssignBook = async (bookId: number) => {
   }
 }
 
-// Unassigns a book from an author
+// Removes a book from the selected author and refreshes the author data
 const handleUnassignBook = async (bookId: number) => {
   if (!selectedAuthor.value) return
   try {
@@ -382,7 +414,9 @@ const handleUnassignBook = async (bookId: number) => {
   }
 }
 
-// when opening update modal, pre-populate with existing values
+// --- Update author form ---
+
+// Pre-populates the update form with the selected author's existing values when the modal opens
 watch(showUpdateAuthor, (val) => {
   if (val && selectedAuthor.value) {
     updateAuthorLanguages.value = [...selectedAuthor.value.languages]
@@ -390,6 +424,7 @@ watch(showUpdateAuthor, (val) => {
   }
 })
 
+// Adds the current language input value to the list if it isn't already there
 const addLanguageToUpdate = () => {
   if (
     updateAuthorLanguage.value &&
@@ -400,10 +435,12 @@ const addLanguageToUpdate = () => {
   }
 }
 
+// Removes a language from the update list
 const removeLanguage = (lang: string) => {
   updateAuthorLanguages.value = updateAuthorLanguages.value.filter((l) => l !== lang)
 }
 
+// Adds the current genre selection to the list if it isn't already there
 const addGenreToUpdate = () => {
   if (updateAuthorGenre.value && !updateAuthorGenres.value.includes(updateAuthorGenre.value)) {
     updateAuthorGenres.value.push(updateAuthorGenre.value)
@@ -411,10 +448,12 @@ const addGenreToUpdate = () => {
   }
 }
 
+// Removes a genre from the update list
 const removeGenre = (genre: string) => {
   updateAuthorGenres.value = updateAuthorGenres.value.filter((g) => g !== genre)
 }
 
+// Submits the update author form with the new languages and genres
 const submitUpdateAuthor = async () => {
   if (isUpdating.value || !selectedAuthor.value) return
   isUpdating.value = true
@@ -434,6 +473,7 @@ const submitUpdateAuthor = async () => {
   }
 }
 
+// Deletes the selected author after confirmation and closes the detail modal
 const handleDeleteAuthor = async (id: number) => {
   if (!confirm('Are you sure you want to delete this author?')) return
   try {
@@ -445,6 +485,9 @@ const handleDeleteAuthor = async (id: number) => {
   }
 }
 
+// --- Lifecycle ---
+
+// Fetches all authors and books when the component mounts
 onMounted(async () => {
   authors.value = await getAuthors()
   books.value = await getBooks()
@@ -452,10 +495,14 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* --- Page Layout --- */
+
+/* Main page container */
 .authors-view {
   padding: 1rem;
 }
 
+/* Page header - space between title/filter and add button */
 .header {
   display: flex;
   justify-content: space-between;
@@ -463,6 +510,7 @@ onMounted(async () => {
   margin-bottom: 2rem;
 }
 
+/* Groups the title and filter button together on the left */
 .header-left {
   display: flex;
   align-items: center;
@@ -475,12 +523,16 @@ onMounted(async () => {
   margin: 0;
 }
 
+/* --- Author Cards --- */
+
+/* Responsive grid that auto-fills columns at minimum 280px wide */
 .authors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
+/* Card uses flex column so the footer can be pushed to the bottom */
 .author-card {
   background: white;
   border-radius: var(--border-radius-lg);
@@ -494,6 +546,7 @@ onMounted(async () => {
   flex-direction: column;
 }
 
+/* Lifts card on hover for a tactile feel */
 .author-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
@@ -517,6 +570,7 @@ onMounted(async () => {
   margin: 0 0 1rem 0;
 }
 
+/* margin-top: auto pushes footer to the bottom of the card regardless of content height */
 .author-footer {
   display: flex;
   justify-content: space-between;
@@ -525,6 +579,7 @@ onMounted(async () => {
   margin-top: auto;
 }
 
+/* Shown when no authors exist or none match the current filters */
 .empty-state {
   text-align: center;
   padding: 4rem;
@@ -534,6 +589,9 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
 }
 
+/* --- Modals --- */
+
+/* Full screen semi-transparent overlay behind all modals */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -547,6 +605,7 @@ onMounted(async () => {
   z-index: 100;
 }
 
+/* Base modal container - scrollable for long content */
 .modal {
   background: white;
   padding: 2rem;
@@ -563,6 +622,7 @@ onMounted(async () => {
   margin-bottom: 1.5rem;
 }
 
+/* Shared input, select and textarea styles inside modals */
 .modal input,
 .modal select,
 .modal textarea {
@@ -576,16 +636,19 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+/* Highlight border on focus */
 .modal input:focus,
 .modal select:focus,
 .modal textarea:focus {
   border-color: var(--color-primary-mid);
 }
 
+/* Wider modal for the detail view */
 .modal-detail {
   max-width: 600px;
 }
 
+/* Header row inside detail modals with title and close button */
 .modal-detail-header {
   display: flex;
   justify-content: space-between;
@@ -593,6 +656,9 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
+/* --- Buttons --- */
+
+/* Invisible close button in modal headers */
 .btn-close {
   background: none;
   border: none;
@@ -606,6 +672,7 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
+/* Primary action button - dark blue */
 .btn-primary {
   background-color: var(--color-primary-mid);
   color: white;
@@ -625,6 +692,7 @@ onMounted(async () => {
   transform: translateY(-1px);
 }
 
+/* Secondary action button - light teal */
 .btn-secondary {
   background-color: var(--color-highlight);
   color: var(--color-primary);
@@ -644,12 +712,66 @@ onMounted(async () => {
   transform: translateY(-1px);
 }
 
+/* Destructive delete button - red */
+.btn-delete-author {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+.btn-delete-author:hover {
+  background-color: #cc0000;
+  transform: translateY(-1px);
+}
+
+/* Filter icon button */
+.btn-filter {
+  background-color: var(--color-primary-mid);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-filter:hover {
+  background-color: var(--color-primary-light);
+}
+
+/* Unused legacy filter button class - kept for reference */
+.btn-filter-authors {
+  background-color: var(--color-primary-mid);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-filter-authors:hover {
+  background-color: var(--color-primary-light);
+}
+
+/* Row of action buttons inside detail modals */
 .modal-actions {
   display: flex;
   gap: 1rem;
   margin-top: 1.5rem;
 }
 
+/* Right-aligned confirm/cancel buttons at the bottom of forms */
 .modal-buttons {
   display: flex;
   gap: 1rem;
@@ -674,12 +796,16 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
+/* --- Detail Modal Content --- */
+
+/* Secondary info text in detail modals */
 .detail-meta {
   color: var(--color-secondary);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
+/* Highlighted rating pill in detail modals */
 .detail-rating {
   background: var(--color-highlight);
   color: var(--color-primary);
@@ -690,6 +816,9 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* --- Search and Filter --- */
+
+/* Standalone search input used in book list and assign modals */
 .search-input {
   width: 100%;
   padding: 0.75rem;
@@ -705,6 +834,7 @@ onMounted(async () => {
   border-color: var(--color-primary-mid);
 }
 
+/* Row combining a search input and filter button side by side */
 .search-bar {
   display: flex;
   gap: 0.5rem;
@@ -712,30 +842,23 @@ onMounted(async () => {
   align-items: center;
 }
 
+/* Search input inside search bar takes remaining space */
 .search-bar .search-input {
   flex: 1;
   margin-bottom: 0;
 }
 
-.btn-filter {
-  background-color: var(--color-primary-mid);
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
-
-.btn-filter:hover {
-  background-color: var(--color-primary-light);
-}
-
+/* Narrow filter modal for genre filtering */
 .modal-filter {
   max-width: 350px;
 }
 
+/* Unused legacy filter modal class - kept for reference */
+.modal-filter-authors {
+  max-width: 350px;
+}
+
+/* Label above filter dropdowns */
 .filter-label {
   display: block;
   color: var(--color-primary);
@@ -743,6 +866,17 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
+/* Unused legacy filter label - kept for reference */
+.filter-label-authors {
+  display: block;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* --- Book List Items --- */
+
+/* Row in the assigned books and assign book modals */
 .book-list-item {
   display: flex;
   justify-content: space-between;
@@ -753,6 +887,7 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
+/* Invisible delete button inside book list rows */
 .book-list-item .btn-delete {
   background: none;
   border: none;
@@ -768,6 +903,7 @@ onMounted(async () => {
   opacity: 1;
 }
 
+/* Book title takes remaining space, pushing badge and delete to the right */
 .book-list-title {
   color: var(--color-primary);
   font-weight: 500;
@@ -775,6 +911,7 @@ onMounted(async () => {
   margin-right: 0.5rem;
 }
 
+/* Small pill badge for genre labels */
 .genre-badge {
   background-color: var(--color-highlight);
   color: var(--color-primary);
@@ -784,20 +921,26 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* Shown when a search returns no results */
 .no-results {
   text-align: center;
   color: var(--color-secondary);
   padding: 1rem;
 }
 
+/* Wider modal for the book list */
 .modal-books {
   max-width: 500px;
 }
 
+/* Narrow modal for the assign book search */
 .modal-assign {
   max-width: 400px;
 }
 
+/* --- Tags --- */
+
+/* Wrapping row of tag pills for languages and genres */
 .tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -805,6 +948,7 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
+/* Individual tag pill with remove button */
 .tag {
   background: var(--color-highlight);
   color: var(--color-primary);
@@ -816,6 +960,7 @@ onMounted(async () => {
   gap: 0.25rem;
 }
 
+/* Invisible remove button inside each tag */
 .tag button {
   background: none;
   border: none;
@@ -826,6 +971,7 @@ onMounted(async () => {
   line-height: 1;
 }
 
+/* Row combining an input or select with an add button side by side */
 .genre-select {
   display: flex;
   gap: 0.5rem;
@@ -833,11 +979,8 @@ onMounted(async () => {
   align-items: center;
 }
 
-.genre-select select {
-  flex: 1;
-  margin-bottom: 0;
-}
-
+/* Input and select inside genre-select take remaining space
+   and override the full width set by .modal input */
 .genre-select input,
 .genre-select select {
   flex: 1;
@@ -845,62 +988,22 @@ onMounted(async () => {
   width: auto;
 }
 
-.btn-delete-author {
-  background-color: #ff4d4d;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius-full);
-  cursor: pointer;
-  font-size: 1rem;
-  box-shadow: var(--shadow-sm);
-  transition:
-    background-color 0.2s,
-    transform 0.1s;
-}
-
-.btn-delete-author:hover {
-  background-color: #cc0000;
-  transform: translateY(-1px);
-}
-
-.btn-filter-authors {
-  background-color: var(--color-primary-mid);
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
-
-.btn-filter-authors:hover {
-  background-color: var(--color-primary-light);
-}
-
-.modal-filter-authors {
-  max-width: 350px;
-}
-
-.filter-label-authors {
-  display: block;
-  color: var(--color-primary);
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
+/* --- Responsive --- */
 
 @media (max-width: 768px) {
+  /* Single column on mobile */
   .authors-grid {
     grid-template-columns: 1fr;
   }
 
+  /* Stack header vertically on mobile */
   .header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
   }
 
+  /* Stack action buttons vertically on mobile */
   .modal-actions {
     flex-direction: column;
   }

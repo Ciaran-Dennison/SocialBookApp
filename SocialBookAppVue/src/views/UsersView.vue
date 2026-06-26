@@ -190,25 +190,45 @@
 </template>
 
 <script setup lang="ts">
+/// --- Imports ---
+
 import { onMounted, ref, computed, watch } from 'vue'
 import { getUsers, createUser, updateUser, deleteUser } from '../services/userService.ts'
 import { useSearchStore } from '../stores/searchStore.ts'
 import type { User } from '../types/user.ts'
 import { PrivacyLevel, Genre } from '../types/enums.ts'
 
-const updateGenre = ref('')
-const genreFilter = ref('')
+// --- State ---
+
+// Global search store shared across all views via the navbar search bar
 const searchStore = useSearchStore()
+
+// User data fetched from the API
 const users = ref<User[]>([])
+
+// Currently selected user, drives the detail modal
 const selectedUser = ref<User | null>(null)
+
+// Modal visibility toggles
 const showAddUser = ref(false)
 const showUpdateUser = ref(false)
 const showFilter = ref(false)
+
+// Loading states to prevent duplicate submissions
 const isSubmitting = ref(false)
 const isUpdating = ref(false)
-const privacyFilter = ref('')
-const updateLanguage = ref('')
 
+// Filter values for the user grid
+const privacyFilter = ref('')
+const genreFilter = ref('')
+
+// Update user form input values
+const updateLanguage = ref('') // current language being typed before adding
+const updateGenre = ref('') // current genre being selected before adding
+
+// --- Form data ---
+
+// Add user form data with default values
 const newUser = ref({
   userName: '',
   firstName: '',
@@ -221,6 +241,7 @@ const newUser = ref({
   favouriteGenres: [] as string[],
 })
 
+// Update user form data - pre-populated when the update modal opens
 const updateUserData = ref({
   userName: '',
   firstName: '',
@@ -232,6 +253,9 @@ const updateUserData = ref({
   favouriteGenres: [] as string[],
 })
 
+// --- Computed ---
+
+// Filters the user grid by the navbar search term, privacy level and favourite genre
 const filteredUsers = computed(() => {
   return users.value.filter((u) => {
     const matchesSearch = u.userName.toLowerCase().includes(searchStore.searchTerm.toLowerCase())
@@ -241,15 +265,24 @@ const filteredUsers = computed(() => {
   })
 })
 
+// --- Filter actions ---
+
+// Resets all user grid filters
 const clearFilters = () => {
   privacyFilter.value = ''
   genreFilter.value = ''
 }
 
+// --- Helpers ---
+
+// Sets the selected user to drive the detail modal
 const selectUser = (user: User) => {
   selectedUser.value = user
 }
 
+// --- Update user form ---
+
+// Pre-populates the update form with the selected user's existing values when the modal opens
 watch(showUpdateUser, (val) => {
   if (val && selectedUser.value) {
     updateUserData.value = {
@@ -265,6 +298,7 @@ watch(showUpdateUser, (val) => {
   }
 })
 
+// Adds the current language input value to the list if it isn't already there
 const addLanguage = () => {
   if (updateLanguage.value && !updateUserData.value.languages.includes(updateLanguage.value)) {
     updateUserData.value.languages.push(updateLanguage.value)
@@ -272,10 +306,29 @@ const addLanguage = () => {
   }
 }
 
+// Removes a language from the update list
 const removeLanguage = (lang: string) => {
   updateUserData.value.languages = updateUserData.value.languages.filter((l) => l !== lang)
 }
 
+// Adds the current genre selection to the list if it isn't already there
+const addGenre = () => {
+  if (updateGenre.value && !updateUserData.value.favouriteGenres.includes(updateGenre.value)) {
+    updateUserData.value.favouriteGenres.push(updateGenre.value)
+    updateGenre.value = ''
+  }
+}
+
+// Removes a genre from the update list
+const removeGenre = (genre: string) => {
+  updateUserData.value.favouriteGenres = updateUserData.value.favouriteGenres.filter(
+    (g) => g !== genre,
+  )
+}
+
+// --- API actions ---
+
+// Submits the add user form and refreshes the user list
 const submitUser = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
@@ -283,6 +336,7 @@ const submitUser = async () => {
     await createUser({ ...newUser.value } as unknown as User)
     users.value = await getUsers()
     showAddUser.value = false
+    // Reset form to defaults after successful submission
     newUser.value = {
       userName: '',
       firstName: '',
@@ -301,12 +355,14 @@ const submitUser = async () => {
   }
 }
 
+// Submits the update user form and refreshes the selected user from fresh data
 const submitUpdateUser = async () => {
   if (isUpdating.value || !selectedUser.value) return
   isUpdating.value = true
   try {
     await updateUser(selectedUser.value.id!, { ...updateUserData.value } as unknown as User)
     users.value = await getUsers()
+    // Re-selects the same user from fresh data so the detail modal updates
     selectedUser.value = users.value.find((u) => u.id === selectedUser.value!.id) ?? null
     showUpdateUser.value = false
   } catch (error) {
@@ -316,6 +372,7 @@ const submitUpdateUser = async () => {
   }
 }
 
+// Deletes a user after confirmation and closes the detail modal
 const handleDeleteUser = async (id: number) => {
   if (!confirm('Are you sure you want to delete this user?')) return
   try {
@@ -327,29 +384,23 @@ const handleDeleteUser = async (id: number) => {
   }
 }
 
-const addGenre = () => {
-  if (updateGenre.value && !updateUserData.value.favouriteGenres.includes(updateGenre.value)) {
-    updateUserData.value.favouriteGenres.push(updateGenre.value)
-    updateGenre.value = ''
-  }
-}
+// --- Lifecycle ---
 
-const removeGenre = (genre: string) => {
-  updateUserData.value.favouriteGenres = updateUserData.value.favouriteGenres.filter(
-    (g) => g !== genre,
-  )
-}
-
+// Fetches all users when the component mounts
 onMounted(async () => {
   users.value = await getUsers()
 })
 </script>
 
 <style scoped>
+/* --- Page Layout --- */
+
+/* Main page container */
 .users-view {
   padding: 1rem;
 }
 
+/* Page header - space between title/filter and add button */
 .header {
   display: flex;
   justify-content: space-between;
@@ -357,6 +408,7 @@ onMounted(async () => {
   margin-bottom: 2rem;
 }
 
+/* Groups the title and filter button together on the left */
 .header-left {
   display: flex;
   align-items: center;
@@ -369,12 +421,16 @@ onMounted(async () => {
   margin: 0;
 }
 
+/* --- User Cards --- */
+
+/* Responsive grid that auto-fills columns at minimum 280px wide */
 .users-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
+/* Card uses flex column so the footer can be pushed to the bottom */
 .user-card {
   background: white;
   border-radius: var(--border-radius-lg);
@@ -388,17 +444,20 @@ onMounted(async () => {
   flex-direction: column;
 }
 
+/* Lifts card on hover for a tactile feel */
 .user-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
 
+/* Row of privacy level and joined date badges at the top of each card */
 .user-card-header {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
+/* Privacy level badge - teal background */
 .privacy-badge {
   background-color: var(--color-highlight);
   color: var(--color-primary);
@@ -408,6 +467,7 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* Joined date badge - slightly different colour to distinguish from privacy badge */
 .date-badge {
   background-color: var(--color-accent);
   color: var(--color-primary);
@@ -429,6 +489,8 @@ onMounted(async () => {
   margin: 0 0 1rem 0;
 }
 
+/* Footer stacks languages and genres vertically
+   margin-top: auto pushes it to the bottom of the card */
 .user-footer {
   display: flex;
   flex-direction: column;
@@ -438,6 +500,7 @@ onMounted(async () => {
   margin-top: auto;
 }
 
+/* Shown when no users exist or none match the current filters */
 .empty-state {
   text-align: center;
   padding: 4rem;
@@ -447,6 +510,9 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
 }
 
+/* --- Modals --- */
+
+/* Full screen semi-transparent overlay behind all modals */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -460,6 +526,7 @@ onMounted(async () => {
   z-index: 100;
 }
 
+/* Base modal container - scrollable for long content */
 .modal {
   background: white;
   padding: 2rem;
@@ -476,6 +543,7 @@ onMounted(async () => {
   margin-bottom: 1.5rem;
 }
 
+/* Shared input and select styles inside modals */
 .modal input,
 .modal select,
 .modal textarea {
@@ -489,15 +557,18 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+/* Highlight border on focus */
 .modal input:focus,
 .modal select:focus {
   border-color: var(--color-primary-mid);
 }
 
+/* Wider modal for the detail view */
 .modal-detail {
   max-width: 600px;
 }
 
+/* Header row inside detail modals with name and close button */
 .modal-detail-header {
   display: flex;
   justify-content: space-between;
@@ -505,6 +576,9 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
+/* --- Buttons --- */
+
+/* Invisible close button in modal headers */
 .btn-close {
   background: none;
   border: none;
@@ -518,6 +592,7 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
+/* Primary action button - dark blue */
 .btn-primary {
   background-color: var(--color-primary-mid);
   color: white;
@@ -537,6 +612,7 @@ onMounted(async () => {
   transform: translateY(-1px);
 }
 
+/* Secondary action button - light teal */
 .btn-secondary {
   background-color: var(--color-highlight);
   color: var(--color-primary);
@@ -556,6 +632,7 @@ onMounted(async () => {
   transform: translateY(-1px);
 }
 
+/* Destructive delete button - red */
 .btn-delete-user {
   background-color: #ff4d4d;
   color: white;
@@ -575,6 +652,23 @@ onMounted(async () => {
   transform: translateY(-1px);
 }
 
+/* Filter icon button */
+.btn-filter {
+  background-color: var(--color-primary-mid);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-filter:hover {
+  background-color: var(--color-primary-light);
+}
+
+/* Right-aligned confirm/cancel buttons at the bottom of forms */
 .modal-buttons {
   display: flex;
   gap: 1rem;
@@ -599,12 +693,16 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
+/* --- Detail Modal --- */
+
+/* Secondary info text in detail modals */
 .detail-meta {
   color: var(--color-secondary);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
+/* Row of action buttons at the bottom of the detail modal */
 .detail-actions {
   display: flex;
   gap: 1rem;
@@ -612,12 +710,17 @@ onMounted(async () => {
   margin-top: 1rem;
 }
 
+/* --- Update Form --- */
+
+/* Row combining an input or select with an add button side by side */
 .genre-select {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
+/* Input and select inside genre-select take remaining space
+   and override the full width set by .modal input */
 .genre-select input {
   flex: 1;
   margin-bottom: 0;
@@ -630,6 +733,10 @@ onMounted(async () => {
   width: auto;
 }
 
+/* --- Tags --- */
+
+/* Wrapping row of tag pills for languages and genres
+   margin-top: 0.5rem keeps tags close to their input row */
 .tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -638,6 +745,7 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
+/* Individual tag pill with remove button */
 .tag {
   background: var(--color-highlight);
   color: var(--color-primary);
@@ -649,6 +757,7 @@ onMounted(async () => {
   gap: 0.25rem;
 }
 
+/* Invisible remove button inside each tag */
 .tag button {
   background: none;
   border: none;
@@ -659,25 +768,14 @@ onMounted(async () => {
   line-height: 1;
 }
 
-.btn-filter {
-  background-color: var(--color-primary-mid);
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
+/* --- Filter Modal --- */
 
-.btn-filter:hover {
-  background-color: var(--color-primary-light);
-}
-
+/* Narrow filter modal */
 .modal-filter {
   max-width: 350px;
 }
 
+/* Label above filter dropdowns */
 .filter-label {
   display: block;
   color: var(--color-primary);
@@ -685,17 +783,22 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
+/* --- Responsive --- */
+
 @media (max-width: 768px) {
+  /* Single column on mobile */
   .users-grid {
     grid-template-columns: 1fr;
   }
 
+  /* Stack header vertically on mobile */
   .header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
   }
 
+  /* Stack action buttons vertically on mobile */
   .detail-actions {
     flex-direction: column;
   }
